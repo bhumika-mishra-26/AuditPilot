@@ -9,5 +9,3 @@ urllib3
 apscheduler>=3.10.1
 httpx>=0.24.1
 markdown>=3.4.0
-libsql-client
-libsql-experimental
