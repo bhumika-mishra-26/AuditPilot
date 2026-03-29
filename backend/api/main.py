@@ -11,6 +11,9 @@ if str(BASE_DIR) not in sys.path:
 import os
 os.environ["API_MODE"] = "1"
 
+from dotenv import load_dotenv
+load_dotenv()
+
 from api.routes import workflow, logs, traces, memory, explain, briefing, vendors
 from modules.scheduler import start_scheduler, stop_scheduler
 

@@ -589,6 +589,8 @@ const Hyperspeed = ({ effectOptions = DEFAULT_EFFECT_OPTIONS }) => {
         });
         this.renderer.setSize(initW, initH, false);
         this.renderer.setPixelRatio(window.devicePixelRatio);
+        // Force context creation to avoid alpha property error in EffectComposer
+        this.renderer.getContext();
         this.composer = new EffectComposer(this.renderer);
         container.append(this.renderer.domElement);
 
