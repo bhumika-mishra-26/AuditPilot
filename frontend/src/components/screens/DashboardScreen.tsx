@@ -527,63 +527,66 @@ Overall, the workflow *completed* but had to pause and be escalated once because
       )}
 
       {/* Briefing Email Modal */}
-      <AnimatePresence>
-        {showBriefingModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
-          >
+      {createPortal(
+        <AnimatePresence>
+          {showBriefingModal && (
             <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="bg-black border border-indigo-500/30 rounded-2xl shadow-[0_0_50px_rgba(99,102,241,0.2)] w-full max-w-md overflow-hidden"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
             >
-              <div className="p-6 border-b border-white/10 flex justify-between items-center bg-indigo-500/5">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center">
-                    <Sparkles className="w-4 h-4 text-indigo-400" />
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                className="bg-black border border-indigo-500/30 rounded-2xl shadow-[0_0_50px_rgba(99,102,241,0.2)] w-full max-w-md overflow-hidden"
+              >
+                <div className="p-6 border-b border-white/10 flex justify-between items-center bg-indigo-500/5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center">
+                      <Sparkles className="w-4 h-4 text-indigo-400" />
+                    </div>
+                    <h3 className="text-lg font-bold text-white tracking-tight">Generate Briefing</h3>
                   </div>
-                  <h3 className="text-lg font-bold text-white tracking-tight">Generate Briefing</h3>
-                </div>
-                <button 
-                  onClick={() => setShowBriefingModal(false)}
-                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-                >
-                  <X className="w-5 h-5 text-gray-400" />
-                </button>
-              </div>
-              
-              <form onSubmit={handleGenerateBriefing} className="p-6 space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Recipient Email (Optional)</label>
-                  <input
-                    type="email"
-                    value={briefingEmail}
-                    onChange={(e) => setBriefingEmail(e.target.value)}
-                    placeholder="operator@auditpilot.ai"
-                    className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
-                  />
-                  <p className="mt-2 text-xs text-gray-500 font-mono">
-                    A copy of the system briefing will be dispatched to this address.
-                  </p>
+                  <button 
+                    onClick={() => setShowBriefingModal(false)}
+                    className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                  >
+                    <X className="w-5 h-5 text-gray-400" />
+                  </button>
                 </div>
                 
-                <button 
-                  type="submit"
-                  className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"
-                >
-                  <Send className="w-4 h-4" />
-                  INITIATE SYNTHESIS
-                </button>
-              </form>
+                <form onSubmit={handleGenerateBriefing} className="p-6 space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Recipient Email (Optional)</label>
+                    <input
+                      type="email"
+                      value={briefingEmail}
+                      onChange={(e) => setBriefingEmail(e.target.value)}
+                      placeholder="operator@auditpilot.ai"
+                      className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                    />
+                    <p className="mt-2 text-xs text-gray-500 font-mono">
+                      A copy of the system briefing will be dispatched to this address.
+                    </p>
+                  </div>
+                  
+                  <button 
+                    type="submit"
+                    className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"
+                  >
+                    <Send className="w-4 h-4" />
+                    INITIATE SYNTHESIS
+                  </button>
+                </form>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
 
       {/* Workflow Completion Result Modal */}
       {createPortal(

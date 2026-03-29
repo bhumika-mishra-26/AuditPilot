@@ -12,14 +12,24 @@ Usage:
     conn.close()
 """
 
-import sqlite3
 import os
 from pathlib import Path
+from dotenv import load_dotenv
 
-DB_PATH = Path(__file__).resolve().parent.parent / "auditpilot.db"
+load_dotenv()
+
+TURSO_URL = os.getenv("TURSO_DB_URL")
+TURSO_TOKEN = os.getenv("TURSO_DB_TOKEN")
+
+if TURSO_URL and TURSO_TOKEN:
+    import libsql_experimental as sqlite3
+    DB_PATH = f"{TURSO_URL}?authToken={TURSO_TOKEN}"
+else:
+    import sqlite3
+    DB_PATH = str(Path(__file__).resolve().parent.parent / "auditpilot.db")
 
 
-def get_connection() -> sqlite3.Connection:
+def get_connection():
     """
     Returns a SQLite connection with:
     - Row factory set so columns can be accessed by name (row["error_hash"])
@@ -27,14 +37,15 @@ def get_connection() -> sqlite3.Connection:
     - Foreign keys enforced
     - check_same_thread=False for async/multithreaded environments
     """
-    conn = sqlite3.connect(str(DB_PATH), check_same_thread=False, timeout=10)
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False, timeout=10)
     conn.row_factory = sqlite3.Row
     
-    # Consistent PRAGMAs for AuditPilot
-    conn.execute("PRAGMA journal_mode=WAL")
-    conn.execute("PRAGMA foreign_keys=ON")
-    conn.execute("PRAGMA synchronous=NORMAL")
-    conn.execute("PRAGMA cache_size=-64000") # 64MB cache
+    # Consistent PRAGMAs for AuditPilot (Only run for local SQLite, Turso ignores these)
+    if not TURSO_URL:
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA foreign_keys=ON")
+        conn.execute("PRAGMA synchronous=NORMAL")
+        conn.execute("PRAGMA cache_size=-64000") # 64MB cache
     return conn
 
 
