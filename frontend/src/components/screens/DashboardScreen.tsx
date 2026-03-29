@@ -59,23 +59,7 @@ export default function DashboardScreen() {
   
   // Result Modal State
   const [showResultModal, setShowResultModal] = useState(false);
-  const [workflowSummary, setWorkflowSummary] = useState<string | null>(`What happened in this workflow?
-**High‑level picture**
-
-The workflow \`e3bbd1c8‑c580‑4ee3‑a759‑927c5d4f74f9\` is a typical “receive‑an‑inquiry → figure‑out‑who‑owns‑it → create‑a‑task → hand it off to a downstream sub‑workflow (W3)” process.  
-
----
-
-### 1. Starting the workflow
-| Trace line | What happened |
-|------------|--------------|
-| \`master_orchestrator – intent_classification\` | **Success**: Intent identified as ticket creation. |
-| \`master_orchestrator – state_building\` | **Success**: Context object initialized. |
-
-### 2. Escalation Overview
-The system hit an **ambiguous owner** situation. Because its confidence score was too low, it escalated the decision to a human via the \`w4_agent\`.
-
-Overall, the workflow *completed* but had to pause and be escalated once because the automated owner‑lookup could not pick a single owner.`);
+  const [workflowSummary, setWorkflowSummary] = useState<string | null>(null);
 
   const logsEndRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);

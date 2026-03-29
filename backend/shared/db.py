@@ -34,6 +34,9 @@ def get_connection():
     """
     return engine.connect()
 
+# -----------------------------
+# CORE FUNCTIONS
+# -----------------------------
 def write_trace(
     workflow_id: str,
     workflow_type: str,
