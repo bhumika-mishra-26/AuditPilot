@@ -1,1 +1,16 @@
 .env
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.db
+*.db
+auditpilot.db
+*.log
+.venv/
+venv/
+ENV/
+dist/
+build/
+.vscode/
+.idea/
