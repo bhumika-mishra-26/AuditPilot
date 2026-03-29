@@ -37,7 +37,8 @@ def get_connection():
     - Foreign keys enforced
     - check_same_thread=False for async/multithreaded environments
     """
-    conn = sqlite3.connect(DB_PATH, check_same_thread=False, timeout=10)
+    # libsql-experimental doesn't support the 'timeout' keyword argument
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     
     # Consistent PRAGMAs for AuditPilot (Only run for local SQLite, Turso ignores these)
