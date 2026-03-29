@@ -266,3 +266,37 @@ def get_all_traces(limit=100):
         return [dict(row) for row in rows]
     finally:
         conn.close()
+
+def get_briefing_history(limit: int = 10):
+    conn = get_connection()
+    try:
+        rows = conn.execute(
+            "SELECT * FROM briefing_log ORDER BY created_at DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+        return [dict(row) for row in rows]
+    finally:
+        conn.close()
+
+
+def get_workflow_traces(workflow_id: str):
+    conn = get_connection()
+    try:
+        rows = conn.execute(
+            "SELECT * FROM traces WHERE workflow_id = ? ORDER BY created_at ASC",
+            (workflow_id,),
+        ).fetchall()
+        return [dict(row) for row in rows]
+    finally:
+        conn.close()
+
+
+def get_systemic_alerts():
+    conn = get_connection()
+    try:
+        rows = conn.execute(
+            "SELECT * FROM systemic_alerts WHERE resolved = 0 ORDER BY created_at DESC"
+        ).fetchall()
+        return [dict(row) for row in rows]
+    finally:
+        conn.close()
