@@ -59,23 +59,7 @@ export default function DashboardScreen() {
   
   // Result Modal State
   const [showResultModal, setShowResultModal] = useState(false);
-  const [workflowSummary, setWorkflowSummary] = useState<string | null>(`What happened in this workflow?
-**High‑level picture**
-
-The workflow \`e3bbd1c8‑c580‑4ee3‑a759‑927c5d4f74f9\` is a typical “receive‑an‑inquiry → figure‑out‑who‑owns‑it → create‑a‑task → hand it off to a downstream sub‑workflow (W3)” process.  
-
----
-
-### 1. Starting the workflow
-| Trace line | What happened |
-|------------|--------------|
-| \`master_orchestrator – intent_classification\` | **Success**: Intent identified as ticket creation. |
-| \`master_orchestrator – state_building\` | **Success**: Context object initialized. |
-
-### 2. Escalation Overview
-The system hit an **ambiguous owner** situation. Because its confidence score was too low, it escalated the decision to a human via the \`w4_agent\`.
-
-Overall, the workflow *completed* but had to pause and be escalated once because the automated owner‑lookup could not pick a single owner.`);
+  const [workflowSummary, setWorkflowSummary] = useState<string | null>(null);
 
   const logsEndRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -488,45 +472,60 @@ Overall, the workflow *completed* but had to pause and be escalated once because
         <CyberCard title={workflowState === 'idle' ? '—' : workflowState.toUpperCase()} subtitle="Current" highlight="Status" description="Status from orchestrator." prompt="NEURAL METRIC" />
       </motion.section>
 
-      {/* Onboard Vendor Modal */}
-      {showVendorModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
-          <div className="bg-[#0a0a0a] border border-white/10 p-8 rounded-2xl w-full max-w-md shadow-2xl relative">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-white uppercase tracking-tight">Onboard Vendor (HITL)</h2>
-              <button onClick={() => setShowVendorModal(false)} className="text-gray-500 hover:text-white">
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            <form onSubmit={handleOnboardVendor} className="space-y-6">
-              <div>
-                <label className="block text-[10px] font-mono text-indigo-400 uppercase tracking-widest mb-2">Vendor ID</label>
-                <input 
-                  type="text" value={newVendor.vendor_id} onChange={(e) => setNewVendor({...newVendor, vendor_id: e.target.value})}
-                  className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500" required
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-mono text-indigo-400 uppercase tracking-widest mb-2">Vendor Name</label>
-                <input 
-                  type="text" value={newVendor.name} onChange={(e) => setNewVendor({...newVendor, name: e.target.value})}
-                  className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500" required
-                />
-              </div>
-              {vendorError && <p className="text-red-400 text-xs font-mono">{vendorError}</p>}
-              <button 
-                type="submit" disabled={isSubmittingVendor}
-                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"
+      {/* Onboard Vendor Modal - Portaled to body for centering */}
+      {createPortal(
+        <AnimatePresence>
+          {showVendorModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[140] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md"
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                className="bg-[#0a0a0a] border border-white/10 p-8 rounded-2xl w-full max-w-md shadow-2xl relative z-[150]"
               >
-                {isSubmittingVendor ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
-                ADD VENDOR & RESUME
-              </button>
-            </form>
-          </div>
-        </div>
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-bold text-white uppercase tracking-tight">Onboard Vendor (HITL)</h2>
+                  <button onClick={() => setShowVendorModal(false)} className="text-gray-500 hover:text-white">
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+                <form onSubmit={handleOnboardVendor} className="space-y-6">
+                  <div>
+                    <label className="block text-[10px] font-mono text-indigo-400 uppercase tracking-widest mb-2">Vendor ID</label>
+                    <input 
+                      type="text" value={newVendor.vendor_id} onChange={(e) => setNewVendor({...newVendor, vendor_id: e.target.value})}
+                      className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500" required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-mono text-indigo-400 uppercase tracking-widest mb-2">Vendor Name</label>
+                    <input 
+                      type="text" value={newVendor.name} onChange={(e) => setNewVendor({...newVendor, name: e.target.value})}
+                      className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500" required
+                    />
+                  </div>
+                  {vendorError && <p className="text-red-400 text-xs font-mono">{vendorError}</p>}
+                  <button 
+                    type="submit" disabled={isSubmittingVendor}
+                    className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"
+                  >
+                    {isSubmittingVendor ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
+                    ADD VENDOR & RESUME
+                  </button>
+                </form>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
       )}
 
-      {/* Briefing Email Modal */}
+      {/* Briefing Email Modal - Portaled to body for centering */}
       {createPortal(
         <AnimatePresence>
           {showBriefingModal && (
@@ -534,14 +533,14 @@ Overall, the workflow *completed* but had to pause and be escalated once because
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+              className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
             >
               <motion.div
                 initial={{ scale: 0.95, opacity: 0, y: 20 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.95, opacity: 0, y: 20 }}
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                className="bg-black border border-indigo-500/30 rounded-2xl shadow-[0_0_50px_rgba(99,102,241,0.2)] w-full max-w-md overflow-hidden"
+                className="bg-[#0a0a0a] border border-indigo-500/30 rounded-2xl shadow-[0_0_50px_rgba(99,102,241,0.2)] w-full max-w-md overflow-hidden relative z-[130]"
               >
                 <div className="p-6 border-b border-white/10 flex justify-between items-center bg-indigo-500/5">
                   <div className="flex items-center gap-3">

@@ -1,14 +1,16 @@
 from fastapi import APIRouter, Depends
+from sqlmodel import Session, select
 from api.deps.db import get_db
-import sqlite3
+from shared.models import PatternMemory
 
 router = APIRouter()
 
 @router.get("")
-async def get_pattern_memory(db: sqlite3.Connection = Depends(get_db)):
+async def get_pattern_memory(db: Session = Depends(get_db)):
     """
     Returns all rows from pattern_memory table ordered by last_seen descending.
     Used by the memory panel.
     """
-    rows = db.execute("SELECT * FROM pattern_memory ORDER BY last_seen_at DESC").fetchall()
-    return [dict(row) for row in rows]
+    statement = select(PatternMemory).order_by(PatternMemory.last_seen_at.desc())
+    results = db.exec(statement).all()
+    return [r.model_dump() for r in results]

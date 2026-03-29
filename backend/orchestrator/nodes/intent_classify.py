@@ -21,9 +21,7 @@ from shared.logger import log
 from shared.utils import classify_task_keywords
 from shared.db import write_trace
 
-load_dotenv()
-
-OPENROUTER_API_KEY   = os.environ.get("OPENROUTER_API_KEY", "")
+load_dotenv(override=True)
 MODEL                = "openrouter/auto"
 OPENROUTER_URL       = "https://openrouter.ai/api/v1/chat/completions"
 CONFIDENCE_THRESHOLD = 0.85
@@ -104,11 +102,15 @@ def _call_openrouter(prompt: str) -> dict:
         ],
     }).encode("utf-8")
 
+    key = os.environ.get("OPENROUTER_API_KEY", "").strip()
+    if not key:
+        print("[DEBUG] [intent_classify] OPENROUTER_API_KEY is missing or empty!")
+    
     req = urllib.request.Request(
         OPENROUTER_URL,
         data    = payload,
         headers = {
-            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+            "Authorization": f"Bearer {key}",
             "Content-Type" : "application/json",
         },
         method = "POST",

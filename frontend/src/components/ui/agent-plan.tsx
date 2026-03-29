@@ -9,7 +9,7 @@ import {
   CircleX,
   Zap,
 } from "lucide-react";
-import { motion, AnimatePresence, LayoutGroup } from "motion/react";
+import { motion, AnimatePresence, LayoutGroup, Variants } from "motion/react";
 
 // Type definitions
 interface Subtask {
@@ -36,8 +36,8 @@ interface Task {
 const initialTasks: Task[] = [
   {
     id: "W1",
-    title: "Vendor Onboarding Workflow",
-    description: "Automated identity verification, KYC, and core ledger account creation.",
+    title: "Client Onboarding Workflow",
+    description: "Automated identity verification, KYC, and core ledger account creation for new clients.",
     status: "pending",
     priority: "high",
     level: 0,
@@ -46,7 +46,7 @@ const initialTasks: Task[] = [
       {
         id: "W1.1",
         title: "Payload Validation",
-        description: "Verify incoming request schema and data integrity.",
+        description: "Verify incoming client registration schema and data integrity.",
         status: "pending",
         priority: "high",
         tools: ["validate-node"],
@@ -54,7 +54,7 @@ const initialTasks: Task[] = [
       {
         id: "W1.2",
         title: "Identity & Duplicate Check",
-        description: "Cross-reference existing records to prevent duplicate account creation.",
+        description: "Cross-reference existing client records to prevent duplicate account creation.",
         status: "pending",
         priority: "medium",
         tools: ["duplicate-detector"],
@@ -62,7 +62,7 @@ const initialTasks: Task[] = [
       {
         id: "W1.3",
         title: "KYC/AML Verification",
-        description: "Screen entities against global sanctions and watchlists.",
+        description: "Screen client entities against global sanctions and watchlists.",
         status: "pending",
         priority: "high",
         tools: ["kyc-agent"],
@@ -70,7 +70,7 @@ const initialTasks: Task[] = [
       {
         id: "W1.4",
         title: "Core Ledger Integration",
-        description: "Initialize the financial record in the primary database.",
+        description: "Initialize the client financial record in the primary database.",
         status: "pending",
         priority: "high",
         tools: ["execution-orchestrator"],
@@ -79,8 +79,8 @@ const initialTasks: Task[] = [
   },
   {
     id: "W2",
-    title: "Procurement & Audit Cycle",
-    description: "End-to-end management of vendor payments with real-time risk monitoring.",
+    title: "Vendor Procurement & Audit Cycle",
+    description: "End-to-end management of vendor payments with real-time risk monitoring and PO audit.",
     status: "pending",
     priority: "high",
     level: 0,
@@ -89,31 +89,31 @@ const initialTasks: Task[] = [
       {
         id: "W2.1",
         title: "Document Ingestion",
-        description: "Process invoices and purchase orders into the system.",
+        description: "Process vendor invoices and purchase orders into the system.",
         status: "pending",
         priority: "high",
         tools: ["intake-bridge"],
       },
       {
         id: "W2.2",
-        title: "Semantic Analysis",
-        description: "Extract intent and line items from unstructured documentation.",
+        title: "Vendor Verification",
+        description: "Verify the vendor exists in the database and is in active status.",
         status: "pending",
         priority: "high",
-        tools: ["validation-engine"],
+        tools: ["vendor-check-agent"],
       },
       {
         id: "W2.3",
-        title: "Risk Exposure Analysis",
-        description: "Detect policy violations or fraudulent patterns.",
+        title: "PO & Risk Analysis",
+        description: "Audit line items against Purchase Orders and detect policy violations.",
         status: "pending",
         priority: "high",
-        tools: ["vendor-check-agent", "monitor-node"],
+        tools: ["validation-engine", "monitor-node"],
       },
       {
         id: "W2.4",
         title: "Approval & Disbursement",
-        description: "Finalize financial release and log transaction proof.",
+        description: "Finalize vendor payment release and log transaction proof.",
         status: "pending",
         priority: "medium",
         tools: ["approval-node", "payment-gateway"],
@@ -260,13 +260,13 @@ export default function AgentPlan({ activeTaskId, overallStatus }: { activeTaskI
     );
   };
 
-  const taskVariants = {
+  const taskVariants: Variants = {
     hidden: { opacity: 0, y: prefersReducedMotion ? 0 : -5 },
     visible: { 
       opacity: 1, 
       y: 0,
       transition: { 
-        type: prefersReducedMotion ? "tween" : "spring", 
+        type: (prefersReducedMotion ? "tween" : "spring") as any, 
         stiffness: 500, 
         damping: 30,
         duration: prefersReducedMotion ? 0.2 : undefined
@@ -275,7 +275,7 @@ export default function AgentPlan({ activeTaskId, overallStatus }: { activeTaskI
     exit: { opacity: 0, y: prefersReducedMotion ? 0 : -5, transition: { duration: 0.15 } }
   };
 
-  const subtaskListVariants = {
+  const subtaskListVariants: Variants = {
     hidden: { opacity: 0, height: 0, overflow: "hidden" },
     visible: { 
       height: "auto", 
@@ -285,19 +285,19 @@ export default function AgentPlan({ activeTaskId, overallStatus }: { activeTaskI
         duration: 0.25, 
         staggerChildren: prefersReducedMotion ? 0 : 0.05,
         when: "beforeChildren",
-        ease: [0.2, 0.65, 0.3, 0.9]
+        ease: [0.2, 0.65, 0.3, 0.9] as any
       }
     },
-    exit: { height: 0, opacity: 0, overflow: "hidden", transition: { duration: 0.2, ease: [0.2, 0.65, 0.3, 0.9] } }
+    exit: { height: 0, opacity: 0, overflow: "hidden", transition: { duration: 0.2, ease: [0.2, 0.65, 0.3, 0.9] as any } }
   };
 
-  const subtaskVariants = {
+  const subtaskVariants: Variants = {
     hidden: { opacity: 0, x: prefersReducedMotion ? 0 : -10 },
     visible: { 
       opacity: 1, 
       x: 0,
       transition: { 
-        type: prefersReducedMotion ? "tween" : "spring", 
+        type: (prefersReducedMotion ? "tween" : "spring") as any, 
         stiffness: 500, 
         damping: 25,
         duration: prefersReducedMotion ? 0.2 : undefined
@@ -306,16 +306,16 @@ export default function AgentPlan({ activeTaskId, overallStatus }: { activeTaskI
     exit: { opacity: 0, x: prefersReducedMotion ? 0 : -10, transition: { duration: 0.15 } }
   };
 
-  const subtaskDetailsVariants = {
+  const subtaskDetailsVariants: Variants = {
     hidden: { opacity: 0, height: 0, overflow: "hidden" },
-    visible: { opacity: 1, height: "auto", overflow: "visible", transition: { duration: 0.25, ease: [0.2, 0.65, 0.3, 0.9] } }
+    visible: { opacity: 1, height: "auto", overflow: "visible", transition: { duration: 0.25, ease: [0.2, 0.65, 0.3, 0.9] as any } }
   };
 
-  const statusBadgeVariants = {
+  const statusBadgeVariants: Variants = {
     initial: { scale: 1 },
     animate: { 
       scale: prefersReducedMotion ? 1 : [1, 1.08, 1],
-      transition: { duration: 0.35, ease: [0.34, 1.56, 0.64, 1] }
+      transition: { duration: 0.35, ease: [0.34, 1.56, 0.64, 1] as any }
     }
   };
 
@@ -327,7 +327,7 @@ export default function AgentPlan({ activeTaskId, overallStatus }: { activeTaskI
         animate={{ 
           opacity: 1, 
           y: 0,
-          transition: { duration: 0.3, ease: [0.2, 0.65, 0.3, 0.9] }
+          transition: { duration: 0.3, ease: [0.2, 0.65, 0.3, 0.9] as any }
         }}
       >
         <LayoutGroup>

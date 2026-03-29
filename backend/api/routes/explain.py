@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+from sqlmodel import Session, select
 from api.deps.db import get_db
-import sqlite3
+from shared.models import Trace
 import json
 import os
 import urllib.request
@@ -64,21 +65,35 @@ async def _stream_explanation(prompt: str) -> AsyncGenerator[str, None]:
         yield f"Error during streaming: {str(e)}"
 
 @router.post("/explain")
-async def explain_workflow(request: ExplainRequest, db: sqlite3.Connection = Depends(get_db)):
+async def explain_workflow(request: ExplainRequest, db: Session = Depends(get_db)):
     """
     Explains a workflow's execution using its traces.
     Streams the response token by token.
     """
-    # Fetch traces
-    rows = db.execute(
-        "SELECT agent, step_id, status, error_type, decision_reason FROM traces WHERE workflow_id = ?",
-        (request.workflow_id,)
-    ).fetchall()
+    # Fetch traces using SQLModel
+    statement = select(
+        Trace.agent, 
+        Trace.step_id, 
+        Trace.status, 
+        Trace.error_type, 
+        Trace.decision_reason
+    ).where(Trace.workflow_id == request.workflow_id)
     
-    if not rows:
+    results = db.exec(statement).all()
+    
+    if not results:
         raise HTTPException(status_code=404, detail="No traces found for this workflow.")
 
-    traces_summary = json.dumps([dict(r) for r in rows], indent=2)
+    # Convert results (list of tuples) to a summary string
+    traces_summary = json.dumps([
+        {
+            "agent": r[0],
+            "step_id": r[1],
+            "status": r[2],
+            "error_type": r[3],
+            "decision_reason": r[4]
+        } for r in results
+    ], indent=2)
     
     prompt = f"""You are an audit assistant. Your job is to explain the execution of a business workflow to a user.
     

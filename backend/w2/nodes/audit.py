@@ -25,36 +25,35 @@ def audit_node(state: dict) -> dict:
     # ── write PO to SQLite purchase_orders table ──────────
     # runs for ALL outcomes — completed, failed, pending_review
     # so every PO processed is permanently recorded
-    conn = get_connection()
-    try:
-        conn.execute(
-            """
-            INSERT OR REPLACE INTO purchase_orders
-            (po_number, vendor_id, vendor_name, amount,
-             invoice_amount, status, created_at)
-            VALUES (?,?,?,?,?,?,datetime('now','localtime'))
-            """,
-            (
-                po.get("po_no", wid),
-                po.get("vendor_id", ""),
-                po.get("vendor_name", ""),
-                po.get("po_amount", 0),
-                po.get("invoice_amount", 0),
-                status,
-            ),
-        )
-        conn.commit()
-        state["logs"].append(
-            log("Audit Agent",
-                f"PO {po.get('po_no')} written to SQLite "
-                f"with status={status} [OK]")
-        )
-    except Exception as e:
-        state["logs"].append(
-            log("Audit Agent", f"PO SQLite write failed: {e} [WARN]")
-        )
-    finally:
-        conn.close()
+    from sqlmodel import Session
+    from shared.db import engine
+    from shared.models import PurchaseOrder
+    from datetime import datetime
+
+    with Session(engine) as session:
+        try:
+            # We use merge (or manual check) for "INSERT OR REPLACE" logic
+            new_po = PurchaseOrder(
+                po_number=str(po.get("po_no", wid)),
+                vendor_id=str(po.get("vendor_id", "")),
+                vendor_name=str(po.get("vendor_name", "")),
+                amount=float(po.get("po_amount", 0)),
+                invoice_amount=float(po.get("invoice_amount", 0)),
+                status=status,
+                created_at=datetime.now()
+            )
+            session.merge(new_po)
+            session.commit()
+            state["logs"].append(
+                log("Audit Agent",
+                    f"PO {po.get('po_no')} written to Neon "
+                    f"with status={status} [OK]")
+            )
+        except Exception as e:
+            state["logs"].append(
+                log("Audit Agent", f"PO Neon write failed: {e} [WARN]")
+            )
+            session.rollback()
 
     # ── write trace row ───────────────────────────────────
     write_trace(

@@ -95,23 +95,25 @@ def get_traces_from_db(hours: int = 8) -> list:
     if str(root) not in sys.path:
         sys.path.append(str(root))
         
-    from shared.db import get_connection
+    from sqlmodel import Session, select
+    from shared.db import engine
+    from shared.models import Trace
+    from datetime import datetime, timedelta
 
     try:
-        conn = get_connection()
-        # Pull the last 150 rows within the timeframe to avoid overwhelming the LLM
-        rows = conn.execute("""
-            SELECT * FROM (
-                SELECT * FROM traces
-                WHERE created_at >= datetime('now', ?)
-                ORDER BY created_at DESC
-                LIMIT 150
-            ) ORDER BY created_at ASC
-        """, (f"-{hours} hours",)).fetchall()
-        conn.close()
-        return [dict(r) for r in rows]
+        with Session(engine) as session:
+            # Pull the last 150 rows within the timeframe to avoid overwhelming the LLM
+            # Neon/Postgres uses different interval syntax, SQLModel handles it or we use timedelta
+            cutoff = datetime.now() - timedelta(hours=hours)
+            statement = select(Trace).where(Trace.created_at >= cutoff).order_by(Trace.created_at.desc()).limit(150)
+            results = session.exec(statement).all()
+            
+            # Convert to list of dicts for the existing logic
+            # Also sort by created_at ASC as expected by the caller
+            traces = sorted([r.model_dump() for r in results], key=lambda x: x["created_at"])
+            return traces
     except Exception as e:
-        print(f"[briefing] Could not read from DB: {e}")
+        print(f"[briefing] Could not read from Neon: {e}")
         return []
 
 

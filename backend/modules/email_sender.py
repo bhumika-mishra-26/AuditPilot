@@ -151,22 +151,23 @@ def send_briefing_email(briefing_result: dict, recipient_email: str = None) -> d
         print(f"[email_sender] Subject: {subject}")
 
         # ── Log to briefing_log table ─────────────────────────
+        from sqlmodel import Session
+        from shared.db import engine
+        from shared.models import BriefingLog
+
         try:
-            conn = get_connection()
-            conn.execute("""
-                INSERT INTO briefing_log
-                    (briefing_date, items_count, email_sent, content)
-                VALUES (?, ?, 1, ?)
-            """, (
-                datetime.now().strftime("%Y-%m-%d"),
-                briefing_result.get("needs_action_count", 0),
-                briefing_result.get("briefing_text", "")
-            ))
-            conn.commit()
-            conn.close()
+            with Session(engine) as session:
+                log_entry = BriefingLog(
+                    briefing_date=datetime.now().strftime("%Y-%m-%d"),
+                    items_count=briefing_result.get("needs_action_count", 0),
+                    email_sent=1,
+                    content=briefing_result.get("briefing_text", "")
+                )
+                session.add(log_entry)
+                session.commit()
             print(f"[email_sender] Logged to briefing_log")
         except Exception as e:
-            print(f"[email_sender] Warning: could not log to briefing_log — {e}")
+            print(f"[email_sender] Warning: could not log to Neon briefing_log — {e}")
 
         return {
             "status":  "sent",

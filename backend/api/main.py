@@ -11,7 +11,16 @@ if str(BASE_DIR) not in sys.path:
 
 os.environ["API_MODE"] = "1"
 
+<<<<<<< HEAD
+from dotenv import load_dotenv
+load_dotenv()
+
+from api.routes import workflow, logs, traces, memory, explain, briefing, vendors
+from modules.scheduler import start_scheduler, stop_scheduler
+
+=======
 # Create app FIRST
+>>>>>>> upstream/main
 app = FastAPI(
     title="AuditPilot API",
     description="Backend API for the AuditAgent system",

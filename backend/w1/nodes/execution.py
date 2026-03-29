@@ -54,31 +54,29 @@ def _persist_client_json(state: dict) -> str:
 
 
 def _persist_client_db(state: dict) -> None:
-    """Writes newly onboarded client to SQLite clients table."""
+    """Writes newly onboarded client to SQLModel clients table."""
+    from sqlmodel import Session
+    from shared.db import engine
+    from shared.models import Client
+    
     payload = state["input"]
-    conn    = get_connection()
-    try:
-        conn.execute(
-            """
-            INSERT OR IGNORE INTO clients
-            (client_id, name, email, phone, gstin,
-             business_type, onboarded_at, status)
-            VALUES (?,?,?,?,?,?,datetime('now','localtime'),'active')
-            """,
-            (
-                payload.get("client_id"),
-                payload.get("name"),
-                payload.get("email"),
-                payload.get("phone", ""),
-                payload.get("gstin"),
-                payload.get("business_type", ""),
-            ),
-        )
-        conn.commit()
-    except Exception as e:
-        print(f"  [WARN] SQLite clients write failed: {e}")
-    finally:
-        conn.close()
+    with Session(engine) as session:
+        try:
+            client = Client(
+                client_id=payload.get("client_id"),
+                name=payload.get("name"),
+                email=payload.get("email"),
+                phone=payload.get("phone", ""),
+                gstin=payload.get("gstin"),
+                business_type=payload.get("business_type", ""),
+                onboarded_at=datetime.now(),
+                status="active"
+            )
+            session.add(client)
+            session.commit()
+        except Exception as e:
+            print(f"  [WARN] SQLModel clients write failed: {e}")
+            session.rollback()
 
 
 def create_account_node(state: dict) -> dict:

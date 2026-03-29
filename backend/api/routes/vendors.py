@@ -1,46 +1,33 @@
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
-import json
-from pathlib import Path
+from fastapi import APIRouter, HTTPException, Depends
+from sqlmodel import Session, select
 from typing import List
+from shared.db import get_session
+from shared.models import Vendor
 
 router = APIRouter()
 
-# DATA_FILE path resolution
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
-DATA_FILE = BASE_DIR / "data" / "vendors.json"
-
-class Vendor(BaseModel):
-    vendor_id: str
-    name: str
-    status: str = "active"
-    risk: str = "Low"
-    spend: str = "$0"
-
-def _load_vendors() -> List[dict]:
-    if not DATA_FILE.exists():
-        return []
-    with DATA_FILE.open("r", encoding="utf-8") as f:
-        return json.load(f)
-
-def _save_vendors(vendors: List[dict]):
-    with DATA_FILE.open("w", encoding="utf-8") as f:
-        json.dump(vendors, f, indent=2)
-
 @router.get("/", response_model=List[Vendor])
-async def list_vendors():
+async def list_vendors(session: Session = Depends(get_session)):
     try:
-        return _load_vendors()
+        statement = select(Vendor).order_by(Vendor.name)
+        results = session.exec(statement).all()
+        return results
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 @router.post("/", response_model=Vendor)
-async def onboard_vendor(vendor: Vendor):
-    vendors = _load_vendors()
-    if any(v["vendor_id"] == vendor.vendor_id for v in vendors):
+async def onboard_vendor(vendor: Vendor, session: Session = Depends(get_session)):
+    # Check if exists
+    statement = select(Vendor).where(Vendor.vendor_id == vendor.vendor_id)
+    existing = session.exec(statement).first()
+    if existing:
         raise HTTPException(status_code=400, detail="Vendor ID already exists")
     
-    new_vendor = vendor.dict()
-    vendors.append(new_vendor)
-    _save_vendors(vendors)
-    return vendor
+    try:
+        session.add(vendor)
+        session.commit()
+        session.refresh(vendor)
+        return vendor
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to onboard vendor: {str(e)}")
