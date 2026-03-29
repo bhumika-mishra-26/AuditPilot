@@ -102,7 +102,6 @@ def get_connection():
             auth_token=TURSO_TOKEN,
             check_same_thread=False
         )
-
         return DictConnection(conn)
 
     else:
@@ -122,27 +121,26 @@ def get_connection():
 
 
 # -----------------------------
-# REQUIRED FUNCTIONS (ADD BACK)
+# CORE FUNCTIONS
 # -----------------------------
 def write_trace(
-    workflow_id: str,
-    workflow_type: str,
-    step_id: str,
-    agent: str,
-    status: str,
-    input_data: dict = None,
-    output_data: dict = None,
-    error_hash: str = None,
-    error_type: str = None,
-    decision: str = None,
-    decision_reason: str = None,
-    log_message: str = None,
-    duration_ms: int = None,
+    workflow_id,
+    workflow_type,
+    step_id,
+    agent,
+    status,
+    input_data=None,
+    output_data=None,
+    error_hash=None,
+    error_type=None,
+    decision=None,
+    decision_reason=None,
+    log_message=None,
+    duration_ms=None,
 ):
     import json
 
     conn = get_connection()
-
     try:
         conn.execute(
             """
@@ -170,5 +168,101 @@ def write_trace(
             ),
         )
         conn.commit()
+    finally:
+        conn.close()
+
+
+def read_pattern(error_hash):
+    conn = get_connection()
+    try:
+        row = conn.execute(
+            "SELECT * FROM pattern_memory WHERE error_hash = ?",
+            (error_hash,),
+        ).fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
+
+
+def update_pattern(error_hash, retry_succeeded):
+    conn = get_connection()
+    try:
+        row = conn.execute(
+            "SELECT attempts, successes FROM pattern_memory WHERE error_hash = ?",
+            (error_hash,),
+        ).fetchone()
+
+        if not row:
+            return
+
+        new_attempts = row["attempts"] + 1
+        new_successes = row["successes"] + (1 if retry_succeeded else 0)
+        new_rate = new_successes / new_attempts
+
+        conn.execute(
+            """
+            UPDATE pattern_memory
+            SET attempts=?, successes=?, success_rate=?
+            WHERE error_hash=?
+            """,
+            (new_attempts, new_successes, new_rate, error_hash),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def count_affected_workflows(error_hash):
+    conn = get_connection()
+    try:
+        rows = conn.execute(
+            """
+            SELECT DISTINCT workflow_id
+            FROM traces
+            WHERE error_hash = ?
+            AND status IN ('failed', 'escalated')
+            """,
+            (error_hash,),
+        ).fetchall()
+
+        affected = [row["workflow_id"] for row in rows]
+        return len(affected), affected
+    finally:
+        conn.close()
+
+
+def write_systemic_alert(error_hash, error_type, affected_workflows, context=None):
+    import json
+
+    conn = get_connection()
+    try:
+        conn.execute(
+            """
+            INSERT INTO systemic_alerts
+            (error_hash, error_type, affected_workflows,
+             occurrence_count, context, created_at)
+            VALUES (?,?,?,?,?,datetime('now','localtime'))
+            """,
+            (
+                error_hash,
+                error_type,
+                json.dumps(affected_workflows),
+                len(affected_workflows),
+                context,
+            ),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def get_all_traces(limit=100):
+    conn = get_connection()
+    try:
+        rows = conn.execute(
+            "SELECT * FROM traces ORDER BY created_at DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+        return [dict(row) for row in rows]
     finally:
         conn.close()
