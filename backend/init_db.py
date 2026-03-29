@@ -152,4 +152,8 @@ def main() -> None:
     conn.close()
 
 if __name__ == "__main__":
-    main()
+    if os.getenv("RUN_DB_INIT", "false").lower() == "true":
+        print("RUN_DB_INIT is true. Initializing database...")
+        main()
+    else:
+        print("Skipping database initialization. Set RUN_DB_INIT=true in your environment variables to run this script.")
