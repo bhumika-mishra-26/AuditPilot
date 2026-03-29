@@ -9,7 +9,7 @@ TURSO_TOKEN = os.getenv("TURSO_DB_TOKEN")
 
 
 # -----------------------------
-# Dict wrappers (UNCHANGED)
+# Dict wrappers
 # -----------------------------
 class DictRow:
     def __init__(self, cursor, row):
@@ -91,15 +91,9 @@ class DictConnection:
 
 
 # -----------------------------
-# CONNECTION (FIXED PART)
+# CONNECTION
 # -----------------------------
 def get_connection():
-    """
-    Returns a DB connection:
-    - Uses Turso if env vars exist
-    - Falls back to local SQLite otherwise
-    """
-
     if TURSO_URL and TURSO_TOKEN:
         import libsql_experimental as sqlite3
 
@@ -125,3 +119,56 @@ def get_connection():
         conn.execute("PRAGMA cache_size=-64000")
 
         return conn
+
+
+# -----------------------------
+# REQUIRED FUNCTIONS (ADD BACK)
+# -----------------------------
+def write_trace(
+    workflow_id: str,
+    workflow_type: str,
+    step_id: str,
+    agent: str,
+    status: str,
+    input_data: dict = None,
+    output_data: dict = None,
+    error_hash: str = None,
+    error_type: str = None,
+    decision: str = None,
+    decision_reason: str = None,
+    log_message: str = None,
+    duration_ms: int = None,
+):
+    import json
+
+    conn = get_connection()
+
+    try:
+        conn.execute(
+            """
+            INSERT INTO traces
+            (workflow_id, workflow_type, step_id, agent,
+             input_data, output_data, status,
+             error_hash, error_type, decision, decision_reason,
+             log_message, duration_ms, created_at)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,datetime('now','localtime'))
+            """,
+            (
+                workflow_id,
+                workflow_type,
+                step_id,
+                agent,
+                json.dumps(input_data) if input_data else None,
+                json.dumps(output_data) if output_data else None,
+                status,
+                error_hash,
+                error_type,
+                decision,
+                decision_reason,
+                log_message,
+                duration_ms,
+            ),
+        )
+        conn.commit()
+    finally:
+        conn.close()
