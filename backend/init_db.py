@@ -5,20 +5,13 @@ AuditPilot — Database initialisation script.
 Run this ONCE before starting the project.
 """
 
-import sqlite3
 import os
 import json
 from pathlib import Path
 from datetime import datetime
 
-DB_PATH = Path(__file__).resolve().parent / "auditpilot.db"
-
-def get_connection() -> sqlite3.Connection:
-    conn = sqlite3.connect(str(DB_PATH))
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode=WAL")
-    conn.execute("PRAGMA foreign_keys=ON")
-    return conn
+from shared.db import get_connection, DB_PATH, TURSO_URL
+import sqlite3 # for type hinting
 
 def create_tables(conn: sqlite3.Connection) -> None:
     statements = [
@@ -146,8 +139,10 @@ def verify(conn: sqlite3.Connection) -> None:
         print(f"    {t:<22} → {count} rows")
 
 def main() -> None:
-    if DB_PATH.exists():
-        DB_PATH.unlink()
+    if not TURSO_URL:
+        local_db_path = Path(DB_PATH)
+        if local_db_path.exists():
+            local_db_path.unlink()
     conn = get_connection()
     create_tables(conn)
     seed_pattern_memory(conn)
