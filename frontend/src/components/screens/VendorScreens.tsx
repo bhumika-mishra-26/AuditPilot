@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Store, UserCheck, AlertTriangle, ArrowUpRight, Loader2, Plus, X } from 'lucide-react';
 import TiltedCard from '../ui/TiltedCard';
@@ -180,77 +181,80 @@ export default function VendorScreens() {
         </motion.div>
       )}
 
-      {/* Modal */}
-      <AnimatePresence>
-        {showModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
-          >
+      {/* Modal - Portaled to body for centering */}
+      {createPortal(
+        <AnimatePresence>
+          {showModal && (
             <motion.div
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              className="bg-[#0a0a0a] border border-white/10 p-8 rounded-2xl w-full max-w-md shadow-[0_0_60px_rgba(99,102,241,0.2)] relative overflow-hidden"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
             >
-              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent" />
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold text-white uppercase tracking-tight">Onboard New Entity</h2>
-                <motion.button
-                  whileHover={{ scale: 1.1, rotate: 90 }}
-                  onClick={() => setShowModal(false)}
-                  className="text-gray-500 hover:text-white transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </motion.button>
-              </div>
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                className="bg-[#0a0a0a] border border-white/10 p-8 rounded-2xl w-full max-w-md shadow-[0_0_60px_rgba(99,102,241,0.2)] relative overflow-hidden z-[170]"
+              >
+                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent" />
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-bold text-white uppercase tracking-tight">Onboard New Entity</h2>
+                  <motion.button
+                    whileHover={{ scale: 1.1, rotate: 90 }}
+                    onClick={() => setShowModal(false)}
+                    className="text-gray-500 hover:text-white transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </motion.button>
+                </div>
 
-              <form onSubmit={handleOnboard} className="space-y-6">
-                <div>
-                  <label className="block text-[10px] font-mono text-indigo-400 uppercase tracking-widest mb-2">
-                    Vendor ID
-                  </label>
-                  <input
-                    type="text"
-                    value={newVendor.vendor_id}
-                    onChange={(e) => setNewVendor({ ...newVendor, vendor_id: e.target.value })}
-                    placeholder="e.g. V-001"
-                    className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30 transition-all"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-mono text-indigo-400 uppercase tracking-widest mb-2">
-                    Legal Name
-                  </label>
-                  <input
-                    type="text"
-                    value={newVendor.name}
-                    onChange={(e) => setNewVendor({ ...newVendor, name: e.target.value })}
-                    placeholder="e.g. Acme Corp"
-                    className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30 transition-all"
-                    required
-                  />
-                </div>
-                {error && <p className="text-red-400 text-[10px] font-mono">{error}</p>}
-                <motion.button
-                  type="submit"
-                  disabled={isSubmitting}
-                  whileHover={{ scale: 1.01, boxShadow: '0 0 25px rgba(99,102,241,0.4)' }}
-                  whileTap={{ scale: 0.98 }}
-                  className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 disabled:opacity-50 text-white font-bold py-4 rounded-xl shadow-lg flex items-center justify-center gap-2"
-                >
-                  {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Store className="w-5 h-5" />}
-                  CONFIRM ONBOARDING
-                </motion.button>
-              </form>
+                <form onSubmit={handleOnboard} className="space-y-6">
+                  <div>
+                    <label className="block text-[10px] font-mono text-indigo-400 uppercase tracking-widest mb-2">
+                      Vendor ID
+                    </label>
+                    <input
+                      type="text"
+                      value={newVendor.vendor_id}
+                      onChange={(e) => setNewVendor({ ...newVendor, vendor_id: e.target.value })}
+                      placeholder="e.g. V-001"
+                      className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30 transition-all"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-mono text-indigo-400 uppercase tracking-widest mb-2">
+                      Legal Name
+                    </label>
+                    <input
+                      type="text"
+                      value={newVendor.name}
+                      onChange={(e) => setNewVendor({ ...newVendor, name: e.target.value })}
+                      placeholder="e.g. Acme Corp"
+                      className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30 transition-all"
+                      required
+                    />
+                  </div>
+                  {error && <p className="text-red-400 text-[10px] font-mono">{error}</p>}
+                  <motion.button
+                    type="submit"
+                    disabled={isSubmitting}
+                    whileHover={{ scale: 1.01, boxShadow: '0 0 25px rgba(99,102,241,0.4)' }}
+                    whileTap={{ scale: 0.98 }}
+                    className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 disabled:opacity-50 text-white font-bold py-4 rounded-xl shadow-lg flex items-center justify-center gap-2"
+                  >
+                    {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Store className="w-5 h-5" />}
+                    CONFIRM ONBOARDING
+                  </motion.button>
+                </form>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </motion.div>
   );
 }
