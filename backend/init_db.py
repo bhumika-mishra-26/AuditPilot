@@ -7,11 +7,11 @@ Run this ONCE before starting the project.
 
 import os
 import json
-from pathlib import Path
 from datetime import datetime
 
-from shared.db import get_connection, DB_PATH, TURSO_URL
-import sqlite3 # for type hinting
+from shared.db import get_connection, TURSO_URL
+import sqlite3  # for type hinting
+
 
 def create_tables(conn: sqlite3.Connection) -> None:
     statements = [
@@ -102,10 +102,13 @@ def create_tables(conn: sqlite3.Connection) -> None:
             updated_at      TEXT NOT NULL DEFAULT (datetime('now','localtime'))
         )""",
     ]
+
     for stmt in statements:
         conn.execute(stmt)
+
     conn.commit()
-    print("  8 tables created.")
+    print("✅ Tables created")
+
 
 def seed_pattern_memory(conn: sqlite3.Connection) -> None:
     rows = [
@@ -113,47 +116,81 @@ def seed_pattern_memory(conn: sqlite3.Connection) -> None:
         ("hash_503_kyc", "HTTP_503_kyc_unavailable", "execution_agent", "retry", 15, 13, 0.87, "2024-03-14 11:45:00", "...", 0, None),
         ("hash_gstin_val", "GSTIN_format_invalid", "intake_agent", "escalate", 8, 0, 0.00, "2024-03-13 14:12:00", "...", 0, None),
     ]
-    conn.executemany("INSERT OR IGNORE INTO pattern_memory VALUES (?,?,?,?,?,?,?,?,?,?,?)", rows)
+
+    conn.executemany(
+        "INSERT OR IGNORE INTO pattern_memory VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+        rows,
+    )
     conn.commit()
+
 
 def seed_existing_clients(conn: sqlite3.Connection) -> None:
     rows = [
         ("C-001", "Mehta Textiles Pvt Ltd", "accounts@mehtatex.in", "9876543210", "27AAPFM0939F1ZV", "Textiles", "2024-01-10 09:00:00", "active"),
     ]
-    conn.executemany("INSERT OR IGNORE INTO clients VALUES (?,?,?,?,?,?,?,?)", rows)
+
+    conn.executemany(
+        "INSERT OR IGNORE INTO clients VALUES (?,?,?,?,?,?,?,?)",
+        rows,
+    )
     conn.commit()
+
 
 def seed_test_traces(conn: sqlite3.Connection) -> None:
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
     rows = [
         ("WF-MTG001", "W3", "T9", "intake_agent", json.dumps({"notes": "notes"}), json.dumps({"tasks": 2}), "success", None, None, None, None, "Validation passed", 150, now),
         ("WF-MTG001", "W3", "T10", "extraction_agent", json.dumps({"notes": "notes"}), json.dumps({"tasks": 2}), "success", None, None, None, None, "Extracted 2 tasks", 800, now),
     ]
-    conn.executemany("INSERT INTO traces (workflow_id, workflow_type, step_id, agent, input_data, output_data, status, error_hash, error_type, decision, decision_reason, log_message, duration_ms, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)", rows)
+
+    conn.executemany(
+        """INSERT INTO traces (
+            workflow_id, workflow_type, step_id, agent,
+            input_data, output_data, status,
+            error_hash, error_type, decision, decision_reason,
+            log_message, duration_ms, created_at
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+        rows,
+    )
     conn.commit()
 
+
 def verify(conn: sqlite3.Connection) -> None:
-    tables = ["pattern_memory", "traces", "clients", "purchase_orders", "tasks", "systemic_alerts", "briefing_log", "workflows"]
+    tables = [
+        "pattern_memory",
+        "traces",
+        "clients",
+        "purchase_orders",
+        "tasks",
+        "systemic_alerts",
+        "briefing_log",
+        "workflows",
+    ]
+
     for t in tables:
         count = conn.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]
-        print(f"    {t:<22} → {count} rows")
+        print(f"{t} → {count} rows")
+
 
 def main() -> None:
     if not TURSO_URL:
-        local_db_path = Path(DB_PATH)
-        if local_db_path.exists():
-            local_db_path.unlink()
+        print("⚠️ Using local SQLite DB")
+
     conn = get_connection()
+
     create_tables(conn)
     seed_pattern_memory(conn)
     seed_existing_clients(conn)
     seed_test_traces(conn)
     verify(conn)
+
     conn.close()
+
 
 if __name__ == "__main__":
     if os.getenv("RUN_DB_INIT", "false").lower() == "true":
-        print("RUN_DB_INIT is true. Initializing database...")
+        print("🚀 Initializing database...")
         main()
     else:
-        print("Skipping database initialization. Set RUN_DB_INIT=true in your environment variables to run this script.")
+        print("Skipping DB init. Set RUN_DB_INIT=true to run.")
