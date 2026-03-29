@@ -11,27 +11,31 @@ if str(BASE_DIR) not in sys.path:
 
 os.environ["API_MODE"] = "1"
 
-from api.routes import workflow, logs, traces, memory, explain, briefing, vendors
-from modules.scheduler import start_scheduler, stop_scheduler
-
+# Create app FIRST
 app = FastAPI(
     title="AuditPilot API",
     description="Backend API for the AuditAgent system",
     version="1.0.0"
 )
 
-# ✅ FIXED CORS (IMPORTANT)
+# ✅ CORS MIDDLEWARE (MUST BE RIGHT AFTER APP INIT)
 origins = [
     "https://audit-pilot-lemon.vercel.app",
+    "http://localhost:3000",  # local dev
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,   # ❌ not "*"
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],  # helps with auth/debugging
 )
+
+# NOW import routes (after middleware setup)
+from api.routes import workflow, logs, traces, memory, explain, briefing, vendors
+from modules.scheduler import start_scheduler, stop_scheduler
 
 # Startup/Shutdown Events
 @app.on_event("startup")
