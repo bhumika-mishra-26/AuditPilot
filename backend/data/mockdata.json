@@ -1,0 +1,72 @@
+{
+  "clients": {
+    "clients": [
+      {
+        "client_id": "C-001",
+        "name": "Tech Corp XYZ",
+        "email": "admin@techcorpxyz.com",
+        "gstin": "27AADCB2230M1Z2"
+      },
+      {
+        "client_id": "C-002",
+        "name": "Innovate Ltd",
+        "email": "finance@innovateltd.in",
+        "gstin": "07AABCI1234N1Z4"
+      },
+      {
+        "client_id": "C-003",
+        "name": "Global Traders",
+        "email": "contact@globaltraders.io",
+        "gstin": "09ABCDE5678F2Z1"
+      },
+      {
+        "client_id": "C-004",
+        "name": "Sunrise Agencies",
+        "email": "hello@sunriseagencies.com",
+        "gstin": "INVALID_GSTIN_123"
+      },
+      {
+        "client_id": "C-005",
+        "name": "Apex Builders",
+        "email": "ops@apexbuilders.net",
+        "gstin": "10ZZZXY0987G1Z1"
+      }
+    ]
+  },
+  "purchase_orders": [
+    {
+      "po_no": "PO-1001",
+      "vendor_id": "V-01",
+      "po_amount": 50000,
+      "invoice_amount": 50000
+    },
+    {
+      "po_no": "PO-1002",
+      "vendor_id": "V-02",
+      "po_amount": 120000,
+      "invoice_amount": 120000
+    },
+    {
+      "po_no": "PO-1003",
+      "vendor_id": "V-01",
+      "po_amount": 40000,
+      "invoice_amount": 45000
+    },
+    {
+      "po_no": "PO-1004",
+      "vendor_id": "V-03",
+      "po_amount": 60000,
+      "invoice_amount": 60000
+    }
+  ],
+  "vendors": [
+    {"vendor_id": "V-01", "name": "Vendor One", "status": "active"},
+    {"vendor_id": "V-02", "name": "Vendor Two", "status": "active"},
+    {"vendor_id": "V-03", "name": "Vendor Three", "status": "inactive"}
+  ],
+  "team_members": [
+    {"name": "Alice Smith", "role": "Developer"},
+    {"name": "Bob Jones", "role": "Manager"},
+    {"name": "Priya Patel", "role": "Marketing"}
+  ]
+}

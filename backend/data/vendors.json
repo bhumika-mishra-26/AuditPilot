@@ -1,0 +1,93 @@
+[
+  {
+    "vendor_id": "V-1001",
+    "name": "Mehta Enterprises",
+    "gstin": "27AABCM1234F1ZV",
+    "status": "active",
+    "purpose": "PO-001 clean success"
+  },
+  {
+    "vendor_id": "V-1002",
+    "name": "Krishna Supplies",
+    "gstin": "29BBBCK5678M1Z5",
+    "status": "active",
+    "purpose": "Spare record"
+  },
+  {
+    "vendor_id": "V-1003",
+    "name": "Patel Trading",
+    "gstin": "24AAECP9012K1ZT",
+    "status": "active",
+    "purpose": "PO-002 mismatch demo"
+  },
+  {
+    "vendor_id": "V-1004",
+    "name": "Singh Logistics",
+    "gstin": "07AABCS3456F1ZK",
+    "status": "active",
+    "purpose": "Spare record"
+  },
+  {
+    "vendor_id": "V-1005",
+    "name": "Gupta Distributors",
+    "gstin": "06AABCG7890P1ZL",
+    "status": "active",
+    "purpose": "Spare record"
+  },
+  {
+    "vendor_id": "V-1006",
+    "name": "Sharma Industries",
+    "gstin": "08AABCS2345F1ZM",
+    "status": "active",
+    "purpose": "Spare record"
+  },
+  {
+    "vendor_id": "V-1007",
+    "name": "Joshi Textiles",
+    "gstin": "09AABCJ6789P1ZN",
+    "status": "inactive",
+    "purpose": "PO-003 vendor inactive fail"
+  },
+  {
+    "vendor_id": "V-1008",
+    "name": "Verma Pharma",
+    "gstin": "10AABCV0123K1ZO",
+    "status": "inactive",
+    "purpose": "Spare record"
+  },
+  {
+    "vendor_id": "V-1009",
+    "name": "Agarwal Tech",
+    "gstin": "11AABCA4567M1ZP",
+    "status": "active",
+    "purpose": "Spare record"
+  },
+  {
+    "vendor_id": "V-1010",
+    "name": "Bansal Exports",
+    "gstin": "12AABCB8901F1ZQ",
+    "status": "active",
+    "purpose": "Spare record"
+  },
+  {
+    "vendor_id": "V-021",
+    "name": "Moksh",
+    "status": "active",
+    "risk": "Low",
+    "spend": "$0"
+  },
+  {
+    "vendor_id": "V-999",
+    "name": "Moksh vendor",
+    "status": "active",
+    "risk": "Low",
+    "spend": "$0"
+  },
+  {
+    "vendor_id": "v-008",
+    "name": "dgdbdb",
+    "status": "active",
+    "risk": "Low",
+    "spend": "$0"
+  }
+]

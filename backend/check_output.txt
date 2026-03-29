@@ -1,0 +1,46 @@
+=== RECENT WORKFLOWS ===
+  db9024f7-6673-44bb-8590-749c90  type=onboarding       status=failed        at=2026-03-28 00:33:30
+  7654b06e-a8f3-4245-b59b-26e6fc  type=meeting          status=failed        at=2026-03-28 00:28:45
+  71c6195c-480c-467b-9d18-1e2f29  type=meeting          status=escalated     at=2026-03-28 00:26:51
+  bbd1d3dd-638f-454c-813b-47af4d  type=onboarding       status=failed        at=2026-03-28 00:20:42
+  e5e8773f-31ad-403d-baee-b105d1  type=onboarding       status=completed     at=2026-03-28 00:20:09
+
+=== TRACES FOR LATEST MEETING WORKFLOW ===
+  workflow_id: 7654b06e-a8f3-4245-b59b-26e6fce0f093
+  intent_classification           status=success       error=None  msg=Classified task as W3 (confidence=0.95)
+  state_building                  status=success       error=None  msg=Initialized W3 state for 7654b06e-a8f3-4245-b59b-26e6fce0f093
+  T9_intake                       status=success       error=None  msg=Validation passed (28 words)
+  T9_extraction                   status=success       error=None  msg=Extracted 3 tasks successfully
+  T14                             status=success       error=HTTP_300_ambiguous_owner  msg=None
+  T10_owner_resolution            status=pending       error=HTTP_300_ambiguous_owner  msg=None
+  T14                             status=success       error=HTTP_404_owner_not_found  msg=None
+  T10_owner_resolution            status=pending       error=HTTP_404_owner_not_found  msg=None
+  T14                             status=success       error=HTTP_404_owner_not_found  msg=None
+  T10_owner_resolution            status=pending       error=HTTP_404_owner_not_found  msg=None
+  invoke_W3                       status=pending_review  error=None  msg=Workflow W3 (7654b06e-a8f3-4245-b59b-26e6fce0f093) escalated
+  result_summary                  status=success       error=None  msg=Generated final plain-English summary
+  state_building                  status=success       error=None  msg=Initialized W3 state for 7654b06e-a8f3-4245-b59b-26e6fce0f093
+  T9_intake                       status=failed        error=INTAKE_NOTES_INVALID  msg=None
+  error_node                      status=escalated     error=INTAKE_NOTES_INVALID  msg=Error 'intake_error' triggers W4 analysis
+  invoke_W3                       status=failed        error=None  msg=Workflow W3 (7654b06e-a8f3-4245-b59b-26e6fce0f093) failed
+  result_summary                  status=success       error=None  msg=Generated final plain-English summary
+
+=== ALL RECENT TRACES ===
+  71c6195c-480c-467b-9d18-1  result_summary                  status=success       error=None
+  71c6195c-480c-467b-9d18-1  T9_extraction                   status=success       error=None
+  71c6195c-480c-467b-9d18-1  T14                             status=success       error=HTTP_300_ambiguous_owner
+  71c6195c-480c-467b-9d18-1  T10_owner_resolution            status=escalated     error=HTTP_300_ambiguous_owner
+  71c6195c-480c-467b-9d18-1  T10_owner_resolution            status=success       error=HTTP_404_owner_not_found
+  71c6195c-480c-467b-9d18-1  T10_owner_resolution            status=success       error=HTTP_404_owner_not_found
+  71c6195c-480c-467b-9d18-1  T11_task_writer                 status=success       error=None
+  71c6195c-480c-467b-9d18-1  invoke_W3                       status=pending_review  error=None
+  71c6195c-480c-467b-9d18-1  state_building                  status=success       error=None
+  71c6195c-480c-467b-9d18-1  T9_intake                       status=success       error=None
+  db9024f7-6673-44bb-8590-7  result_summary                  status=success       error=None
+  db9024f7-6673-44bb-8590-7  intent_classification           status=success       error=None
+  db9024f7-6673-44bb-8590-7  state_building                  status=success       error=None
+  db9024f7-6673-44bb-8590-7  T1                              status=escalated     error=GSTIN_format_invalid
+  db9024f7-6673-44bb-8590-7  error_node                      status=escalated     error=GSTIN_format_invalid
+
+=== INPUT PAYLOAD ===
+  {"name": "call the", "notes": "Extract tasks from these notes: Team sync today. Rahul will finish the UI by Monday. Sarah needs to call the client for feedback by Wednesday. Kunal will fix the API bug by tomorrow.", "original_prompt": "Extract tasks from these notes: Team sync today. Rahul will fini

@@ -1,0 +1,101 @@
+# AuditPilot - Test Inputs & Scenarios
+
+Use these inputs to test the various workflows and the Natural Language Orchestrator.
+
+---
+
+### Workflow 1: Client Onboarding (W1)
+*Test the registration and validation of new clients.*
+
+**Positive Test (Valid Client):**
+> "Register a new client: Name is 'Astra Chemicals', GSTIN is '27ABCDE1234F1Z5', Email is 'finance@astranext.com'"
+
+**Negative Test (Invalid GSTIN - Too Short):**
+> "Add client 'Small Shop' with GSTIN '12345' and email 'shop@test.com'"
+
+**Negative Test (Duplicate Email):**
+> "Register 'Duplicate Corp' with email 'accounts@mehtatex.in' (already exists in seed data)"
+
+---
+
+### Workflow 2: Procurement to Payment (W2)
+*Test PO-Invoice matching and vendor verification.*
+
+**Positive Test (Exact Match):**
+> "Process payment for PO-2024-001 with vendor V-1001 for amount 45000"
+
+**Mismatch Test (3-Way Mismatch):**
+> "Audit PO-2024-002 for vendor V-1003. Invoice amount is 122200 but PO was 120000"
+
+**Lookup Failure Test:**
+> "Verify payment for PO-2024-003 with vendor V-3000 (non-existent vendor)"
+
+---
+
+### Workflow 3: Meeting to Task (W3)
+*Test extraction of action items from meeting notes.*
+
+**Standard Team Sync:**
+> "Extract tasks from these notes: Team sync today. Rahul will finish the UI by Monday. Sarah needs to call the client for feedback by Wednesday. Kunal will fix the API bug by tomorrow."
+
+**Complex Notes:**
+> "Convert this transcript to tasks: We discussed the Q3 budget. Mark mentioned that the cloud costs are too high and he will investigate by Friday noon. Jenny will prepare the presentation. Also, don't forget that we need to finalize the vendor list by next week, which is assigned to Peter."
+
+---
+
+### Workflow 4: Multi-Task Orchestration
+*Test the system's ability to handle complex, multi-part requests.*
+
+**Sequential Tasks:**
+> "First, register a new client 'Beta Labs' with GSTIN '27GUKJP5432M1Z0' and email 'beta@labs.com'. Then, process a task extraction for: 'Beta Labs wants a demo by Friday. Alice to schedule.'"
+
+**Bulk Operations:**
+> "Audit the payments for PO-2024-001 and PO-2024-002 simultaneously."
+
+---
+
+### Systemic & Edge Cases
+*Test behavior in unexpected scenarios.*
+
+**Ambiguous Task:**
+> "Help me with the client thing." (Should trigger Orchestrator clarification)
+
+**Nonsense Input:**
+> "What is the capital of France?" (Should result in a low-confidence/not-a-workflow log)
+
+**Empty/Null Parameters:**
+> "Register a client with name 'Null Corp' but no other details."
+
+---
+
+### Systemic Error & W4 Testing (Advanced)
+*Test how the system handles repeated errors across different workflows.*
+
+**Simulate KYC API Failure (Trigger W4 Retry):**
+> "Register client 'Astra 001' with email 'astra1@test.com'. Then register 'Astra 002' with 'astra2@test.com'. (If the mock KYC API is set to fail, W4 will start tracking the success rate)."
+
+**Trigger Systemic Alert:**
+> "Process three different clients/POs that all hit the same '503 Service Unavailable' error. W4 should fire a systemic alert once the threshold of 3 is reached."
+
+---
+
+### Raw JSON Samples (For API Testing)
+
+**Client Onboarding (W1):**
+```json
+{
+  "name": "Global Traders",
+  "gstin": "07AAECS1234F1Z5",
+  "email": "ops@global.in"
+}
+```
+
+**Procurement (W2):**
+```json
+{
+  "po_no": "PO-TEST-999",
+  "vendor_id": "V-1001",
+  "po_amount": 5000,
+  "invoice_amount": 5100
+}
+```

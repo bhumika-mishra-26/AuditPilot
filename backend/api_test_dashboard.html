@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AuditPilot API Debug Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0b0d;
+            --surface: #14161a;
+            --primary: #00f2ff;
+            --secondary: #7000ff;
+            --text: #e0e0e0;
+            --text-dim: #a0a0a0;
+            --success: #00ff88;
+            --error: #ff3366;
+            --warn: #ffcc00;
+            --border: #ffffff14;
+            --shadow: 0 14px 50px rgba(0,0,0,0.55);
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 18px;
+            height: 100vh;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        h1, h2, h3 {
+            font-family: 'Orbitron', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-top: 0;
+        }
+
+        .app {
+            display: grid;
+            grid-template-columns: 360px 1fr;
+            gap: 18px;
+            height: calc(100vh - 36px);
+        }
+
+        .panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            box-shadow: var(--shadow);
+        }
+
+        .sidebar {
+            gap: 15px;
+        }
+
+        .main {
+            gap: 20px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .brand small {
+            color: var(--text-dim);
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            letter-spacing: 0;
+            text-transform: none;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        label {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            font-weight: 600;
+        }
+
+        input, textarea, select {
+            background: #00000030;
+            border: 1px solid #ffffff22;
+            border-radius: 6px;
+            padding: 10px;
+            color: white;
+            font-family: inherit;
+            outline: none;
+        }
+
+        input:focus, textarea:focus {
+            border-color: #00f2ff66;
+            box-shadow: 0 0 0 4px #00f2ff1a;
+        }
+
+        button {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            border-radius: 6px;
+            padding: 12px;
+            color: black;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, opacity 0.2s;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
+        }
+
+        button:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            display: inline-block;
+        }
+
+        .status-running { background: #00f2ff30; color: var(--primary); }
+        .status-completed { background: #00ff8830; color: var(--success); }
+        .status-failed { background: #ff336630; color: var(--error); }
+        .status-escalated { background: #ffcc0030; color: var(--warn); }
+
+        .workflow-card {
+            background: #ffffff05;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-left: 4px solid transparent;
+        }
+
+        .workflow-card:hover {
+            background: #ffffff0a;
+        }
+
+        .workflow-card.active {
+            border-left-color: var(--primary);
+            background: #ffffff10;
+        }
+
+        .trace-item {
+            display: grid;
+            grid-template-columns: 150px 100px 1fr;
+            padding: 10px;
+            border-bottom: 1px solid #ffffff05;
+            font-size: 0.85rem;
+        }
+
+        .timestamp { color: var(--text-dim); }
+        .agent { color: var(--primary); font-weight: 600; }
+
+        pre {
+            background: #000;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            overflow-x: auto;
+            max-height: 200px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #ffffff10;
+            padding-bottom: 10px;
+        }
+
+        .tab {
+            cursor: pointer;
+            padding: 5px 15px;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+        }
+
+        .tab.active {
+            color: var(--primary);
+            font-weight: bold;
+            border-bottom: 2px solid var(--primary);
+        }
+
+        .log-container {
+            background: #000;
+            color: #00ff00;
+            font-family: 'Courier New', Courier, monospace;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #333;
+        }
+
+        .log-entry { margin-bottom: 5px; line-height: 1.4; }
+        .log-ts { color: #888; margin-right: 10px; }
+        .log-agent { color: var(--primary); font-weight: bold; margin-right: 10px; }
+        .log-msg-success { color: var(--success); }
+        .log-msg-escalated { color: var(--warn); }
+        .log-msg-failed { color: var(--error); }
+
+        .divider {
+            width: 100%;
+            height: 1px;
+            background: #ffffff10;
+            margin: 12px 0;
+        }
+
+        .hitl-box {
+            display: grid;
+            gap: 12px;
+        }
+
+        .hitl-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .hint {
+            color: var(--text-dim);
+            font-size: 0.82rem;
+            line-height: 1.35;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+    <div class="panel sidebar">
+        <div class="brand">
+            <h2 style="margin:0;">AuditPilot</h2>
+            <small id="api-health">API: unknown</small>
+        </div>
+        <div class="input-group">
+            <label>Natural Language Prompt</label>
+            <textarea id="prompt" rows="3" placeholder="e.g. onboard ACME Corp with email info@acme.com"></textarea>
+            <button onclick="startWorkflow()">Start Workflow</button>
+        </div>
+        <div class="divider"></div>
+        <h3>Recent Workflows</h3>
+        <div id="workflow-list" style="flex-grow: 1;">
+            <!-- Workflow cards populate here -->
+            <p style="color: var(--text-dim); font-size: 0.8rem; text-align: center; margin-top: 20px;">No workflows found</p>
+        </div>
+        <button onclick="loadTraces()" style="background: none; border: 1px solid #ffffff20; color: white;">Refresh List</button>
+    </div>
+
+    <div class="panel main">
+        <div id="detail-view" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2 id="detail-title">Workflow Detail</h2>
+                <div id="detail-status-badge" class="badge">RUNNING</div>
+            </div>
+            <p id="detail-id" style="font-family: monospace; color: var(--text-dim); margin-top: -10px;"></p>
+
+            <div class="tabs">
+                <div class="tab active" onclick="showTab('logs')">Live Logs</div>
+                <div class="tab" onclick="showTab('traces')">Traces</div>
+                <div class="tab" onclick="showTab('payload')">Payload</div>
+                <div class="tab" onclick="showTab('explain')">AI Explain</div>
+                <div class="tab" onclick="showTab('system-logs')">System Logs</div>
+                <div class="tab" onclick="showTab('memory')">Memory</div>
+                <div class="tab" onclick="showTab('briefing')">Briefing</div>
+            </div>
+
+            <div id="logs-tab" class="tab-content active">
+                <div id="terminal-log" class="log-container">
+                    <!-- Live logs populate here -->
+                </div>
+            </div>
+
+            <div id="traces-tab" class="tab-content">
+                <div style="max-height: 400px; overflow-y: auto; border: 1px solid #ffffff10; border-radius: 8px;">
+                    <div id="trace-list"></div>
+                </div>
+            </div>
+
+            <div id="explain-tab" class="tab-content">
+                <div class="input-group">
+                    <label>Ask AI about this workflow</label>
+                    <input type="text" id="ai-question" placeholder="Why did this fail?">
+                    <button onclick="askAI()">Explain</button>
+                </div>
+                <div id="ai-response" style="padding: 15px; line-height: 1.6; border: 1px solid var(--primary); border-radius: 8px; background: #00f2ff05; min-height: 50px;">
+                    AI explanation will appear here...
+                </div>
+            </div>
+
+            <div id="system-logs-tab" class="tab-content">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3>Systemic Audit Logs</h3>
+                    <button onclick="loadSystemLogs()" style="padding: 6px 12px; font-size: 0.8rem;">Refresh</button>
+                </div>
+                <div id="system-logs-container" class="log-container" style="max-height: 500px; color: #a0a0a0;">
+                    Click refresh to load broad system logs...
+                </div>
+            </div>
+
+            <div id="memory-tab" class="tab-content">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3>AI Pattern Memory</h3>
+                    <button onclick="loadMemory()" style="padding: 6px 12px; font-size: 0.8rem;">Load Patterns</button>
+                </div>
+                <div id="memory-container" style="display: grid; gap: 10px;">
+                    <!-- Pattern cards here -->
+                </div>
+            </div>
+
+            <div id="briefing-tab" class="tab-content">
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <button onclick="generateBriefing()" style="flex: 1;">Generate New Briefing</button>
+                    <button onclick="loadBriefingHistory()" style="flex: 1; background: none; border: 1px solid #ffffff20; color: white;">History</button>
+                </div>
+                <div id="briefing-container" style="padding: 20px; background: #ffffff05; border-radius: 8px; font-size: 0.95rem; line-height: 1.6;">
+                    Select an action above...
+                </div>
+            </div>
+
+            <div id="hitl-panel" style="display: none; margin-top: 18px; padding: 18px; border: 1px solid #ffcc0040; background: linear-gradient(180deg, #ffcc000c, #ffcc0003); border-radius: 14px; box-shadow: 0 0 30px #ffcc0010;">
+                <div class="hitl-box">
+                    <div class="hitl-title">
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <div style="width: 10px; height: 10px; background: var(--warn); border-radius: 50%; animation: pulse 1.5s infinite;"></div>
+                            <h3 style="color: var(--warn); margin: 0;">Action Required</h3>
+                        </div>
+                        <span class="badge status-escalated">HITL</span>
+                    </div>
+
+                    <div>
+                        <div id="hitl-reason" style="font-size: 0.98rem; line-height: 1.55;"></div>
+                        <div class="hint" id="hitl-hint"></div>
+                    </div>
+
+                    <div>
+                        <label style="display: block; margin-bottom: 8px;">Quick Options</label>
+                        <div id="hitl-options" style="display: flex; gap: 10px; flex-wrap: wrap;"></div>
+                    </div>
+                    
+                    <div class="input-group" style="margin:0;">
+                        <label>Provide Response / Correction</label>
+                        <div style="display: grid; grid-template-columns: 1fr 140px; gap: 10px;">
+                            <input type="text" id="hitl-input" placeholder="Type your response here..." style="border-color: #ffcc0050;">
+                            <button id="hitl-resume-btn" onclick="resumeWorkflow()" style="background: var(--warn); color: black;">Resume</button>
+                        </div>
+                        <div id="hitl-error" style="color: var(--error); font-size: 0.85rem; margin-top: 6px; display: none;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <style>
+            @keyframes pulse {
+                0% { transform: scale(1); opacity: 1; }
+                50% { transform: scale(1.3); opacity: 0.5; }
+                100% { transform: scale(1); opacity: 1; }
+            }
+        </style>
+
+        <div id="empty-state" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--text-dim);">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+            <p>Select a workflow on the left or start a new one.</p>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = "http://localhost:8000/api/v1";
+        let currentWorkflowId = null;
+        let pollInterval = null;
+
+        async function updateApiHealth() {
+            const el = document.getElementById('api-health');
+            try {
+                const res = await fetch(`http://localhost:8000/`);
+                if (!res.ok) throw new Error('bad');
+                el.innerText = "API: online";
+                el.style.color = "var(--success)";
+            } catch {
+                el.innerText = "API: offline";
+                el.style.color = "var(--error)";
+            }
+        }
+
+        async function startWorkflow() {
+            const btn = event.target;
+            const prompt = document.getElementById('prompt').value;
+            if (!prompt) return;
+
+            btn.disabled = true;
+            btn.innerText = "Starting...";
+
+            try {
+                const res = await fetch(`${API_BASE}/workflow/start`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt })
+                });
+                
+                if (!res.ok) throw new Error(`Server returned ${res.status}`);
+                
+                const data = await res.json();
+                console.log("Workflow started:", data);
+                
+                // Refresh list and view the new one
+                await loadTraces();
+                viewWorkflow(data.workflow_id);
+            } catch (e) {
+                console.error("Start error:", e);
+                alert("Error starting workflow: " + e.message + "\nCheck if the server is running at " + API_BASE);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Start Workflow";
+            }
+        }
+
+        async function loadTraces() {
+            try {
+                const res = await fetch(`${API_BASE}/workflow/list?limit=10`);
+                const workflows = await res.json();
+                
+                const list = document.getElementById('workflow-list');
+                
+                if (workflows.length === 0) {
+                    list.innerHTML = '<p style="color: var(--text-dim); font-size: 0.8rem; text-align: center; margin-top: 20px;">No workflows found</p>';
+                    return;
+                }
+
+                list.innerHTML = workflows.map(w => `
+                    <div class="workflow-card ${w.workflow_id === currentWorkflowId ? 'active' : ''}" onclick="viewWorkflow('${w.workflow_id}')">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <strong style="font-size: 0.9rem;">${w.workflow_type.toUpperCase()}</strong>
+                            <span class="badge status-${w.status}">${w.status.toUpperCase()}</span>
+                        </div>
+                        <div style="font-size: 0.7rem; color: var(--text-dim); margin-top: 5px;">${w.workflow_id.substring(0, 13)}...</div>
+                        <div style="font-size: 0.7rem; color: var(--text-dim);">${w.created_at}</div>
+                    </div>
+                `).join('');
+
+            } catch (e) {
+                console.error("Error loading workflows", e);
+            }
+        }
+
+        async function viewWorkflow(id) {
+            currentWorkflowId = id;
+            document.getElementById('empty-state').style.display = 'none';
+            document.getElementById('detail-view').style.display = 'block';
+            document.getElementById('detail-id').innerText = id;
+
+            // Highlight in list
+            document.querySelectorAll('.workflow-card').forEach(c => c.classList.remove('active'));
+            
+            await updateWorkflowDetail();
+
+            if (pollInterval) clearInterval(pollInterval);
+            pollInterval = setInterval(updateWorkflowDetail, 3000);
+        }
+
+        async function updateWorkflowDetail() {
+            if (!currentWorkflowId) return;
+
+            try {
+                // Get Status (includes hitl_reason)
+                const sres = await fetch(`${API_BASE}/workflow/status/${currentWorkflowId}`);
+                const status = await sres.json();
+
+                document.getElementById('detail-title').innerText = `${status.type} Workflow`;
+                const badge = document.getElementById('detail-status-badge');
+                badge.innerText = status.state.toUpperCase();
+                badge.className = `badge status-${status.state}`;
+
+                // Traces
+                const tres = await fetch(`${API_BASE}/traces?workflow_id=${currentWorkflowId}`);
+                const traces = await tres.json();
+                
+                document.getElementById('trace-list').innerHTML = traces.map(t => `
+                    <div class="trace-item">
+                        <span class="timestamp">${t.created_at.split(' ')[1]}</span>
+                        <span class="agent">${t.agent}</span>
+                        <span>${t.decision_reason || t.status}</span>
+                    </div>
+                `).join('');
+
+                // Render Terminal Logs
+                const logContainer = document.getElementById('terminal-log');
+                if (status.logs && status.logs.length > 0) {
+                    const wasAtBottom = logContainer.scrollHeight - logContainer.clientHeight <= logContainer.scrollTop + 20;
+                    
+                    logContainer.innerHTML = status.logs.map(l => {
+                        const time = l.timestamp.split(' ')[1];
+                        const msg = l.message || "";
+                        const lmsgClass = `log-msg-${msg.toLowerCase().includes('fail') ? 'failed' : 
+                                          msg.toLowerCase().includes('escalate') ? 'escalated' : 
+                                          msg.toLowerCase().includes('success') ? 'success' : 'normal'}`;
+                        
+                        return `
+                            <div class="log-entry">
+                                <span class="log-ts">[${time}]</span>
+                                <span class="log-agent">[${l.agent}]</span>
+                                <span class="${lmsgClass}">${msg}</span>
+                            </div>
+                        `;
+                    }).join('');
+                    
+                    if (wasAtBottom) {
+                        logContainer.scrollTop = logContainer.scrollHeight;
+                    }
+                } else {
+                    logContainer.innerHTML = '<div style="color: #666;">Waiting for logs...</div>';
+                }
+
+                // HITL
+                const hitlPanel = document.getElementById('hitl-panel');
+                const optionsDiv = document.getElementById('hitl-options');
+                const hitlInput = document.getElementById('hitl-input');
+                const hitlBtn = document.getElementById('hitl-resume-btn');
+                const hitlError = document.getElementById('hitl-error');
+
+                if (status.state === 'escalated' || (status.hitl_reason && status.state === 'running')) {
+                    hitlPanel.style.display = 'block';
+                    const reasonElem = document.getElementById('hitl-reason');
+                    reasonElem.innerHTML = status.hitl_reason || "The system requires manual input to continue with this step.";
+
+                    const hint = document.getElementById('hitl-hint');
+                    const r = (status.hitl_reason || "").toLowerCase();
+                    if (r.includes("email")) {
+                        hint.innerText = "Enter a valid email (example: name@company.com) and click Resume.";
+                        hitlInput.placeholder = "name@company.com";
+                    } else if (r.includes("gstin")) {
+                        hint.innerText = "Enter a 15-character GSTIN (letters/numbers only) and click Resume.";
+                        hitlInput.placeholder = "15-character GSTIN";
+                    } else if (r.includes("manual approval") || r.includes("approve")) {
+                        hint.innerText = "Choose an option below, or type approve_account / reject_account.";
+                        hitlInput.placeholder = "approve_account";
+                    } else {
+                        hint.innerText = "Choose an option below, or type the required correction.";
+                        hitlInput.placeholder = "Type your response here...";
+                    }
+                    
+                    // Render options buttons
+                    optionsDiv.innerHTML = '';
+                    if (status.hitl_options && status.hitl_options.length > 0) {
+                        status.hitl_options.forEach(opt => {
+                            const btn = document.createElement('button');
+                            btn.innerText = opt;
+                            btn.style.padding = '8px 16px';
+                            btn.style.fontSize = '0.85rem';
+                            btn.style.border = '1px solid var(--warn)';
+                            btn.style.background = 'transparent';
+                            btn.style.color = 'white';
+                            btn.style.cursor = 'pointer';
+                            btn.style.borderRadius = '6px';
+                            btn.style.transition = 'all 0.2s';
+                            btn.onmouseover = () => { btn.style.background = 'var(--warn)'; btn.style.color = 'black'; };
+                            btn.onmouseout = () => { btn.style.background = 'transparent'; btn.style.color = 'white'; };
+                            btn.onclick = () => {
+                                // If option has a number like "1 (approve)", just send "1"
+                                const match = opt.match(/^(\d+)/);
+                                const val = match ? match[1] : opt;
+                                hitlInput.value = val;
+                                
+                                // Only auto-resume for simple numbered choices or explicit actions
+                                if (match || opt === 'approve' || opt === 'reject' || opt === 'cancel' || opt === 'approve_account' || opt === 'reject_account') {
+                                    resumeWorkflow();
+                                } else {
+                                    hitlInput.focus();
+                                }
+                            };
+                            optionsDiv.appendChild(btn);
+                        });
+                    }
+                } else {
+                    hitlPanel.style.display = 'none';
+                    hitlInput.value = '';
+                    hitlError.style.display = 'none';
+                }
+
+                // If finished, stop polling
+                if (status.state === 'completed' || status.state === 'failed') {
+                    clearInterval(pollInterval);
+                }
+
+            } catch (e) {
+                console.error("Poll error", e);
+            }
+        }
+
+        async function resumeWorkflow() {
+            const input = document.getElementById('hitl-input').value;
+            const btn = document.getElementById('hitl-resume-btn');
+            const error = document.getElementById('hitl-error');
+            const hitlPanel = document.getElementById('hitl-panel');
+            
+            if (!input.trim()) {
+                error.innerText = "Please provide an input or select an option.";
+                error.style.display = 'block';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerText = "Resuming...";
+            error.style.display = 'none';
+
+            try {
+                const res = await fetch(`${API_BASE}/workflow/resume/${currentWorkflowId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ input })
+                });
+                
+                if (!res.ok) {
+                    const data = await res.json();
+                    throw new Error(data.detail || "Server error");
+                }
+                
+                const data = await res.json();
+                console.log("Resumed:", data);
+                
+                // Visual feedback
+                hitlPanel.style.opacity = '0.5';
+                document.getElementById('hitl-input').value = '';
+                
+                // Immediate poll to update UI
+                await updateWorkflowDetail();
+                hitlPanel.style.opacity = '1';
+            } catch (e) {
+                console.error("Resume error:", e);
+                error.innerText = "Error: " + e.message;
+                error.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Resume";
+            }
+        }
+
+        async function askAI() {
+            const question = document.getElementById('ai-question').value;
+            const container = document.getElementById('ai-response');
+            container.innerText = "Thinking...";
+
+            try {
+                const res = await fetch(`${API_BASE}/explain`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ workflow_id: currentWorkflowId, question })
+                });
+
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder();
+                container.innerText = "";
+                
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    container.innerText += decoder.decode(value);
+                }
+            } catch (e) {
+                container.innerText = "Error explaining: " + e.message;
+            }
+        }
+
+        async function loadSystemLogs() {
+            const container = document.getElementById('system-logs-container');
+            container.innerText = "Loading systemic logs...";
+            try {
+                const res = await fetch(`${API_BASE}/logs`);
+                const logs = await res.json();
+                container.innerHTML = logs.map(l => `
+                    <div class="log-entry">
+                        <span class="log-ts">[${l.timestamp}]</span>
+                        <span class="log-agent">[${l.source || 'system'}]</span>
+                        <span>${l.message}</span>
+                    </div>
+                `).join('');
+            } catch (e) {
+                container.innerText = "Error loading logs: " + e.message;
+            }
+        }
+
+        async function loadMemory() {
+            const container = document.getElementById('memory-container');
+            container.innerHTML = "Loading patterns...";
+            try {
+                const res = await fetch(`${API_BASE}/memory`);
+                const patterns = await res.json();
+                container.innerHTML = patterns.map(p => `
+                    <div style="padding: 15px; background: #ffffff0a; border-radius: 8px; border-left: 4px solid var(--primary);">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <strong style="color: var(--primary); font-family: monospace;">${p.error_hash}</strong>
+                            <span class="badge status-completed">${Math.round(p.success_rate * 100)}% Success</span>
+                        </div>
+                        <div style="font-size: 0.9rem;">${p.recommended_action || p.error_type}</div>
+                        <div style="font-size: 0.7rem; color: var(--text-dim); margin-top: 5px;">Total Attempts: ${p.attempts}</div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                container.innerHTML = "Error loading memory: " + e.message;
+            }
+        }
+
+        async function generateBriefing() {
+            const container = document.getElementById('briefing-container');
+            container.innerText = "Generating briefing via AI (this may take 10-15s)...";
+            try {
+                const res = await fetch(`${API_BASE}/briefing/generate`, { method: 'POST' });
+                const data = await res.json();
+                container.innerHTML = `
+                    <h3 style="color: var(--success); margin-bottom: 10px;">AuditBrief: ${data.generated_at}</h3>
+                    <div style="white-space: pre-wrap;">${data.briefing_text}</div>
+                    <div style="font-size: 0.7rem; color: var(--text-dim); margin-top: 15px;">Workflows: ${data.workflow_count} | Actions: ${data.needs_action_count}</div>
+                `;
+            } catch (e) {
+                container.innerText = "Error generating briefing: " + e.message;
+            }
+        }
+
+        async function loadBriefingHistory() {
+            const container = document.getElementById('briefing-container');
+            container.innerHTML = "Loading history...";
+            try {
+                const res = await fetch(`${API_BASE}/briefing/history`);
+                const data = await res.json();
+                const history = data.history || [];
+                container.innerHTML = history.slice(0, 5).map(b => `
+                    <div style="padding: 10px; border-bottom: 1px solid #ffffff10; cursor: pointer;" onclick="document.getElementById('briefing-container').innerHTML = '<div style=\\'white-space: pre-wrap;\\'>' + ${JSON.stringify(b.briefing_text)} + '</div>'">
+                        <strong>Briefing: ${b.created_at}</strong>
+                        <div style="font-size: 0.7rem; color: var(--text-dim);">Tasks: ${b.workflow_count}</div>
+                    </div>
+                `).join('') || "No history found";
+            } catch (e) {
+                container.innerHTML = "Error loading history: " + e.message;
+            }
+        }
+
+        function showTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            // Handle cases where the click target might be a child of the tab
+            const tabEl = event.currentTarget || event.target;
+            tabEl.classList.add('active');
+            document.getElementById(`${tab}-tab`).classList.add('active');
+
+            if (tab === 'payload' && currentWorkflowId) {
+                fetch(`${API_BASE}/traces?workflow_id=${currentWorkflowId}&limit=1`)
+                .then(r => r.json())
+                .then(d => {
+                    if (d && d.length > 0) {
+                        try {
+                            const parsed = JSON.parse(d[0].input_data);
+                            document.getElementById('payload-json').innerText = JSON.stringify(parsed, null, 2);
+                        } catch (e) {
+                            document.getElementById('payload-json').innerText = d[0].input_data;
+                        }
+                    }
+                });
+            }
+            
+            if (tab === 'system-logs') loadSystemLogs();
+            if (tab === 'memory') loadMemory();
+        }
+
+        // Initial load and periodic refresh
+        updateApiHealth();
+        loadTraces();
+        setInterval(updateApiHealth, 5000);
+        setInterval(loadTraces, 10000); // Refresh list every 10s
+    </script>
+</body>
+</html>

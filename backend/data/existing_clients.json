@@ -1,0 +1,240 @@
+[
+  {
+    "client_id": "C-001",
+    "name": "Tech Corp XYZ",
+    "email": "admin@techcorpxyz.com",
+    "gstin": "27AADCB2230M1Z2",
+    "onboarded_at": "2026-03-21"
+  },
+  {
+    "client_id": "C-003",
+    "name": "Global Traders",
+    "email": "contact@globaltraders.io",
+    "gstin": "09ABCDE5678F2Z1",
+    "onboarded_at": "2026-03-21"
+  },
+  {
+    "client_id": "C-005",
+    "name": "Apex Builders",
+    "email": "ops@apexbuilders.net",
+    "gstin": "10ZZZXY0987G1Z1",
+    "onboarded_at": "2026-03-21"
+  },
+  {
+    "client_id": "C-002",
+    "name": "Innovate Ltd",
+    "email": "finance@innovateltd.in",
+    "gstin": "07AABCI1234N1Z4",
+    "onboarded_at": "2026-03-21"
+  },
+  {
+    "client_id": "C-6114",
+    "name": "Bhumika",
+    "email": "Bhumikamishra1101@gmail.com",
+    "gstin": "27AABCD1234F123",
+    "onboarded_at": "2026-03-22"
+  },
+  {
+    "client_id": "C-8741",
+    "name": "arjun",
+    "email": "arjun@psit.in",
+    "gstin": "246ASDFF14D41D3",
+    "onboarded_at": "2026-03-23"
+  },
+  {
+    "client_id": "C-96DA",
+    "name": "Kartik Fintech",
+    "email": "abc@example.com",
+    "gstin": "27APPFM0939F1ZV",
+    "onboarded_at": "2026-03-25"
+  },
+  {
+    "client_id": "C-9873",
+    "name": "ACME Corp",
+    "email": "contact@acme.com",
+    "gstin": "27AAECT5678K1ZT",
+    "onboarded_at": "2026-03-25"
+  },
+  {
+    "client_id": "C-A63E",
+    "name": "Kartik Pvt Ltd",
+    "email": "kartik@gmail.com",
+    "gstin": "27AAECT5678K1ZT",
+    "onboarded_at": "2026-03-25"
+  },
+  {
+    "client_id": "C-2BA9",
+    "name": "Kartik Pandey",
+    "email": "karikpaney@gmail.com",
+    "gstin": "27AAECT5678K1ZT",
+    "onboarded_at": "2026-03-25"
+  },
+  {
+    "client_id": "C-11C1",
+    "name": "Zenith Ops",
+    "email": "zenith.ops@zenith.com",
+    "gstin": "27AAECT5678K1ZT",
+    "onboarded_at": "2026-03-25"
+  },
+  {
+    "client_id": "C-3E8A",
+    "name": "DivickCorp",
+    "email": "info.Divick@acme.com",
+    "gstin": "27AAECT5678K1ZT",
+    "onboarded_at": "2026-03-26"
+  },
+  {
+    "client_id": "C-E86A",
+    "name": "approve_account",
+    "email": "ayush@acme.com",
+    "gstin": "27AAECT5678K1ZT",
+    "onboarded_at": "2026-03-26"
+  },
+  {
+    "client_id": "C-D243",
+    "name": "approve_account",
+    "email": "bhumika@acme.com",
+    "gstin": "27AAECT5678K1ZT",
+    "onboarded_at": "2026-03-26"
+  },
+  {
+    "client_id": "C-F651",
+    "name": "Bhumika Mishra",
+    "email": "bhumikamishra@acme.com",
+    "gstin": "27AAECT5678K1ZT",
+    "onboarded_at": "2026-03-26"
+  },
+  {
+    "client_id": "C-169C",
+    "name": "Bhumika Mishra 1",
+    "email": "bhumikamishra1@acme.com",
+    "gstin": "27AAECT5678K1ZT",
+    "onboarded_at": "2026-03-26"
+  },
+  {
+    "client_id": "C-4F0C",
+    "name": "new client",
+    "email": "kartikpq125@gmail.com",
+    "gstin": "27AAECT5678K1ZT",
+    "onboarded_at": "2026-03-26"
+  },
+  {
+    "client_id": "C-1732",
+    "name": "Acme Corp",
+    "email": "cme@test.com",
+    "gstin": "27AAECT5678K1ZT",
+    "onboarded_at": "2026-03-27"
+  },
+  {
+    "client_id": "C-FA26",
+    "name": "Kartik Corp",
+    "email": "kartikpqpandey@gmail.com",
+    "gstin": "27AAECT5678K1ZT",
+    "onboarded_at": "2026-03-27"
+  },
+  {
+    "client_id": "C-B3D3",
+    "name": "Kartik Corp",
+    "email": "kartik@gmail.com",
+    "gstin": "27AAECT5678K1ZT",
+    "onboarded_at": "2026-03-27"
+  },
+  {
+    "client_id": "C-AA29",
+    "name": "Kartikpandey Corp",
+    "email": "sdhfbhfbfh@gmail.com",
+    "gstin": "27AAECT5678K1ZT",
+    "onboarded_at": "2026-03-27"
+  },
+  {
+    "client_id": "C-6A9D",
+    "name": "Acmge Corp",
+    "email": "contgact@acme.com",
+    "gstin": "27AAACA1234A1Z5",
+    "onboarded_at": "2026-03-27"
+  },
+  {
+    "client_id": "C-7596",
+    "name": "a new",
+    "email": "globex@123gmail.com",
+    "gstin": "27AAACA1234A1Z5",
+    "onboarded_at": "2026-03-27"
+  },
+  {
+    "client_id": "C-1BA9",
+    "name": "Global Traders",
+    "email": "ops@global.in",
+    "gstin": "07AAECS1234F1Z5",
+    "onboarded_at": "2026-03-27"
+  },
+  {
+    "client_id": "C-3F79",
+    "name": "Astra Chemicals",
+    "email": "finance@astranext.com",
+    "gstin": "27ABCDE1234F1Z5",
+    "onboarded_at": "2026-03-28"
+  },
+  {
+    "client_id": "C-61F6",
+    "name": "a new",
+    "email": "client@gmail.com",
+    "gstin": "27ABCDE1234F1Z5",
+    "onboarded_at": "2026-03-28"
+  },
+  {
+    "client_id": "C-5230",
+    "name": "'Duplicate Corp'",
+    "email": "accounts@mehtatex.in",
+    "gstin": "27ABCDE1234F1Z5",
+    "onboarded_at": "2026-03-28"
+  },
+  {
+    "client_id": "C-919D",
+    "name": "Moksh Chemicals",
+    "email": "Moksh@astranext.com",
+    "gstin": "27ABCEE1234F1Z5",
+    "onboarded_at": "2026-03-28"
+  },
+  {
+    "client_id": "C-A678",
+    "name": "test client",
+    "email": "test@example.com",
+    "gstin": "N/A",
+    "onboarded_at": "2026-03-28"
+  },
+  {
+    "client_id": "C-EFC6",
+    "name": "Astra Chemicals",
+    "email": "finanhce@astranext.com",
+    "gstin": "27ABCDE1234F1Z5",
+    "onboarded_at": "2026-03-28"
+  },
+  {
+    "client_id": "C-6775",
+    "name": "a new",
+    "email": "abcs2@GMAIL.com",
+    "gstin": "abcs2@GMAIL.com",
+    "onboarded_at": "2026-03-28"
+  },
+  {
+    "client_id": "C-1A54",
+    "name": "a new",
+    "email": "beta@labs.com",
+    "gstin": "27GUKJP5432M1Z0",
+    "onboarded_at": "2026-03-28"
+  },
+  {
+    "client_id": "C-05E5",
+    "name": "a new",
+    "email": "betaa@labs.com",
+    "gstin": "27GULJP5432M1Z0",
+    "onboarded_at": "2026-03-28"
+  },
+  {
+    "client_id": "C-A35A",
+    "name": "Alex",
+    "email": "asdfghjkljvjbxb@jsvnkjcx.com",
+    "gstin": "N/A",
+    "onboarded_at": "2026-03-28"
+  }
+]

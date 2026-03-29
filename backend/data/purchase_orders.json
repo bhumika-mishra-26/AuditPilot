@@ -1,0 +1,23 @@
+[
+  {
+    "po_no": "PO-2024-001",
+    "vendor_id": "V-1001",
+    "po_amount": 45000,
+    "invoice_amount": 45000,
+    "outcome": "Full success"
+  },
+  {
+    "po_no": "PO-2024-002",
+    "vendor_id": "V-1003",
+    "po_amount": 120000,
+    "invoice_amount": 122200,
+    "outcome": "Three-way mismatch"
+  },
+  {
+    "po_no": "PO-2024-003",
+    "vendor_id": "V-1007",
+    "po_amount": 67500,
+    "invoice_amount": 67500,
+    "outcome": "Vendor lookup fails"
+  }
+]

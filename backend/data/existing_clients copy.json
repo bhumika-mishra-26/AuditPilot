@@ -1,0 +1,44 @@
+[
+  {
+    "client_id": "C-001",
+    "name": "Mehta Textiles Pvt Ltd",
+    "email": "accounts@mehtatex.in",
+    "gstin": "27AAPFM0939F1ZV",
+    "onboarded_at": "2024-01-10"
+  },
+  {
+    "client_id": "C-EX1",
+    "name": "Reliance Vendors",
+    "email": "vendor@reliance.com",
+    "gstin": "27AAREL1234F1ZV",
+    "onboarded_at": "2024-01-05"
+  },
+  {
+    "client_id": "C-EX2",
+    "name": "Tata Supplies",
+    "email": "supply@tata.in",
+    "gstin": "27AAECT5678K1ZT",
+    "onboarded_at": "2023-12-20"
+  },
+  {
+    "client_id": "C-NEW1",
+    "name": "Arjun Fintech Pvt Ltd",
+    "email": "contact@arjunfintech.in",
+    "gstin": "29AABCA1234M1Z5",
+    "onboarded_at": "2026-03-22"
+  },
+  {
+    "client_id": "C-007",
+    "name": "Agarwal stells Pvt Ltd",
+    "email": "contac@agarwal.in",
+    "gstin": "27AABCA5678M1Z3",
+    "onboarded_at": "2026-03-22"
+  },
+  {
+    "client_id": "C-NEW-4",
+    "name": "Mittal steels",
+    "email": "contact@mittal.in",
+    "gstin": "12ABR09SD567W4T",
+    "onboarded_at": "2026-03-22"
+  }
+]

@@ -1,0 +1,47 @@
+[
+  {
+    "id": "C-001",
+    "name": "Mehta Textiles Pvt Ltd",
+    "gstin": "27AAPFM0939F1ZV",
+    "email": "accounts@mehtatex.in",
+    "expected_outcome": "Full success",
+    "failure_step": null,
+    "failure_reason": "None — clean run"
+  },
+  {
+    "id": "C-002",
+    "name": "Krishna Logistics",
+    "gstin": "29BBBCK1234M1Z5",
+    "email": "finance@krishnalog.com",
+    "expected_outcome": "Full success",
+    "failure_step": null,
+    "failure_reason": "None — clean run"
+  },
+  {
+    "id": "C-003",
+    "name": "Sharma Trading Co",
+    "gstin": "07AAECS1234F1Z",
+    "email": "sharma@tradingco.in",
+    "expected_outcome": "Intake fails",
+    "failure_step": "Intake agent",
+    "failure_reason": "GSTIN is 14 chars, missing last digit. ValidationError: GSTIN must be 15 characters"
+  },
+  {
+    "id": "C-004",
+    "name": "Patel Industries",
+    "gstin": "24AAECP5678K1ZT",
+    "email": "accounts@mehtatex.in",
+    "expected_outcome": "Duplicate flag",
+    "failure_step": "Intake agent",
+    "failure_reason": "Email already used by C-001. DuplicateError: Email already registered under Mehta Textiles"
+  },
+  {
+    "id": "C-005",
+    "name": "Gupta Pharma Pvt Ltd",
+    "gstin": "06AABCG1234P1ZK",
+    "email": "kyc@guptapharma.in",
+    "expected_outcome": "KYC fails → retry",
+    "failure_step": "Execution agent",
+    "failure_reason": "KYC API returns 503. Pattern memory: KYC_503 has 80% success rate → auto-retries → succeeds on attempt 2"
+  }
+]

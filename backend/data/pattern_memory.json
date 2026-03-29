@@ -1,0 +1,26 @@
+{
+  "API_TIMEOUT": {
+    "solution": "retry",
+    "success_rate": 0.85
+  },
+  "VENDOR_403": {
+    "solution": "escalate",
+    "success_rate": 0.0
+  },
+  "THREE_WAY_MISMATCH": {
+    "solution": "manual_review",
+    "success_rate": 0.0
+  },
+  "api_timeout": {
+    "attempts": 0,
+    "successes": 0
+  },
+  "invalid_json": {
+    "attempts": 5,
+    "successes": 5
+  },
+  "api_error": {
+    "attempts": 5,
+    "successes": 5
+  }
+}
