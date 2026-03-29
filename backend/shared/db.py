@@ -24,7 +24,7 @@ TURSO_TOKEN = os.getenv("TURSO_DB_TOKEN")
 class DictRow:
     def __init__(self, cursor, row):
         self._row = row
-        self._cols = [col[0] for col in cursor.description]
+        self._cols = [col[0] for col in cursor.description] if cursor.description else []
         
     def keys(self):
         return self._cols
@@ -35,6 +35,67 @@ class DictRow:
                 return self._row[self._cols.index(key)]
             raise KeyError(key)
         return self._row[key]
+
+class DictCursor:
+    def __init__(self, cursor):
+        self._cursor = cursor
+
+    def execute(self, *args, **kwargs):
+        self._cursor.execute(*args, **kwargs)
+        return self
+
+    def executemany(self, *args, **kwargs):
+        self._cursor.executemany(*args, **kwargs)
+        return self
+
+    def fetchone(self):
+        row = self._cursor.fetchone()
+        return DictRow(self._cursor, row) if row else None
+
+    def fetchall(self):
+        rows = self._cursor.fetchall()
+        return [DictRow(self._cursor, row) for row in rows] if rows else []
+
+    def __iter__(self):
+        for row in self._cursor:
+            yield DictRow(self._cursor, row)
+
+    def close(self):
+        self._cursor.close()
+        
+    @property
+    def description(self):
+        return self._cursor.description
+        
+    @property
+    def rowcount(self):
+        return self._cursor.rowcount
+        
+    @property
+    def lastrowid(self):
+        return self._cursor.lastrowid
+
+class DictConnection:
+    def __init__(self, conn):
+        self._conn = conn
+
+    def cursor(self):
+        return DictCursor(self._conn.cursor())
+
+    def execute(self, *args, **kwargs):
+        return self.cursor().execute(*args, **kwargs)
+
+    def executemany(self, *args, **kwargs):
+        return self.cursor().executemany(*args, **kwargs)
+
+    def commit(self):
+        self._conn.commit()
+
+    def rollback(self):
+        self._conn.rollback()
+
+    def close(self):
+        self._conn.close()
 
 if TURSO_URL and TURSO_TOKEN:
     import libsql_experimental as sqlite3
@@ -52,14 +113,24 @@ def get_connection():
     - Foreign keys enforced
     - check_same_thread=False for async/multithreaded environments
     """
-    # libsql-experimental doesn't support the 'timeout' keyword argument
     conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     
-    # Use our safe DictRow because libsql-experimental doesn't have .Row
-    conn.row_factory = DictRow
-    
-    # Consistent PRAGMAs for AuditPilot (Only run for local SQLite, Turso ignores these)
-    if not TURSO_URL:
+    # if TURSO_URL and TURSO_TOKEN:
+    #     # Wrap libsql-experimental completely to provide dictionary row support
+    #     conn = DictConnection(conn)
+    # else:
+    #     conn.row_factory = sqlite3.Row
+    #     conn.execute("PRAGMA journal_mode=WAL")
+    #     conn.execute("PRAGMA foreign_keys=ON")
+    #     conn.execute("PRAGMA synchronous=NORMAL")
+    #     conn.execute("PRAGMA cache_size=-64000") # 64MB cache
+    # return conn
+
+    if TURSO_URL and TURSO_TOKEN:
+        # Wrap libsql-experimental completely to provide dictionary row support
+        conn = DictConnection(conn)
+    else:
+        conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA journal_mode=WAL")
         conn.execute("PRAGMA foreign_keys=ON")
         conn.execute("PRAGMA synchronous=NORMAL")
