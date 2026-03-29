@@ -21,6 +21,21 @@ load_dotenv()
 TURSO_URL = os.getenv("TURSO_DB_URL")
 TURSO_TOKEN = os.getenv("TURSO_DB_TOKEN")
 
+class DictRow:
+    def __init__(self, cursor, row):
+        self._row = row
+        self._cols = [col[0] for col in cursor.description]
+        
+    def keys(self):
+        return self._cols
+        
+    def __getitem__(self, key):
+        if isinstance(key, str):
+            if key in self._cols:
+                return self._row[self._cols.index(key)]
+            raise KeyError(key)
+        return self._row[key]
+
 if TURSO_URL and TURSO_TOKEN:
     import libsql_experimental as sqlite3
     DB_PATH = f"{TURSO_URL}?authToken={TURSO_TOKEN}"
@@ -39,7 +54,9 @@ def get_connection():
     """
     # libsql-experimental doesn't support the 'timeout' keyword argument
     conn = sqlite3.connect(DB_PATH, check_same_thread=False)
-    conn.row_factory = sqlite3.Row
+    
+    # Use our safe DictRow because libsql-experimental doesn't have .Row
+    conn.row_factory = DictRow
     
     # Consistent PRAGMAs for AuditPilot (Only run for local SQLite, Turso ignores these)
     if not TURSO_URL:
