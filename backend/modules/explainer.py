@@ -35,17 +35,17 @@ def get_traces_for_workflow(workflow_id: str) -> list:
     """
     Fetches all traces for a workflow_id from DB.
     """
+    from sqlmodel import Session, select
+    from shared.db import engine
+    from shared.models import Trace
+
     try:
-        conn = get_connection()
-        rows = conn.execute("""
-            SELECT * FROM traces
-            WHERE workflow_id = ?
-            ORDER BY created_at ASC
-        """, (workflow_id,)).fetchall()
-        conn.close()
-        return [dict(r) for r in rows]
+        with Session(engine) as session:
+            statement = select(Trace).where(Trace.workflow_id == workflow_id).order_by(Trace.created_at.asc())
+            results = session.exec(statement).all()
+            return [r.model_dump() for r in results]
     except Exception as e:
-        print(f"[explainer] Could not fetch traces from DB: {e}")
+        print(f"[explainer] Could not fetch traces from Neon: {e}")
         return []
 
 

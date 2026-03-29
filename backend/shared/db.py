@@ -1,317 +1,156 @@
-"""
-shared/db.py
-
-Single SQLite connection used by every agent.
-W1, W2, W3, W4, and master orchestrator all import from here.
-
-Usage:
-    from shared.db import get_connection
-
-    conn = get_connection()
-    conn.execute("SELECT * FROM traces")
-    conn.close()
-"""
-
-import sqlite3
+from sqlmodel import SQLModel, create_engine, Session, select
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+import json
+from datetime import datetime
+from .models import PatternMemory, Trace, Client, PurchaseOrder, Task, SystemicAlert, BriefingLog, Workflow
 
-DB_PATH = Path(__file__).resolve().parent.parent / "auditpilot.db"
+load_dotenv()
 
+# Neon or local SQLite/Postgres URL
+DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///auditpilot.db")
 
-def get_connection() -> sqlite3.Connection:
+# SSL configuration for Neon (required)
+connect_args = {}
+if "sqlite" not in DATABASE_URL:
+    connect_args = {"sslmode": "require"}
+
+engine = create_engine(DATABASE_URL, connect_args=connect_args)
+
+from sqlalchemy.orm import sessionmaker
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, class_=Session)
+
+def get_session():
+    """Provides a SQLModel session."""
+    with Session(engine) as session:
+        yield session
+
+def get_connection():
     """
-    Returns a SQLite connection with:
-    - Row factory set so columns can be accessed by name (row["error_hash"])
-    - WAL mode for safe concurrent reads and writes
-    - Foreign keys enforced
-    - check_same_thread=False for async/multithreaded environments
+    Backward compatibility for raw SQL calls.
+    Note: Returns a SQLAlchemy connection object.
+    It's recommended to use get_session() and SQLModel classes instead.
     """
-    conn = sqlite3.connect(str(DB_PATH), check_same_thread=False, timeout=10)
-    conn.row_factory = sqlite3.Row
-    
-    # Consistent PRAGMAs for AuditPilot
-    conn.execute("PRAGMA journal_mode=WAL")
-    conn.execute("PRAGMA foreign_keys=ON")
-    conn.execute("PRAGMA synchronous=NORMAL")
-    conn.execute("PRAGMA cache_size=-64000") # 64MB cache
-    return conn
-
+    return engine.connect()
 
 def write_trace(
-    workflow_id:    str,
-    workflow_type:  str,
-    step_id:        str,
-    agent:          str,
-    status:         str,
-    input_data:     dict = None,
-    output_data:    dict = None,
-    error_hash:     str  = None,
-    error_type:     str  = None,
-    decision:       str  = None,
-    decision_reason:str  = None,
-    log_message:    str  = None,
-    duration_ms:    int  = None,
+    workflow_id: str,
+    workflow_type: str,
+    step_id: str,
+    agent: str,
+    status: str,
+    input_data: dict = None,
+    output_data: dict = None,
+    error_hash: str = None,
+    error_type: str = None,
+    decision: str = None,
+    decision_reason: str = None,
+    log_message: str = None,
+    duration_ms: int = None,
 ):
-    """
-    Writes one row to the traces table.
-
-    Called by every agent node after it completes —
-    whether success or failure.
-
-    Parameters
-    ----------
-    workflow_id     : unique ID for this run e.g. "WF-C005"
-    workflow_type   : "W1" | "W2" | "W3" | "W4"
-    step_id         : node name e.g. "T1", "T3", "validate", "kyc"
-    agent           : agent name e.g. "validation_agent", "kyc_agent"
-    status          : "success" | "failed" | "escalated" | "retried"
-    input_data      : dict of what the node received (will be JSON-serialised)
-    output_data     : dict of what the node produced (will be JSON-serialised)
-    error_hash      : W4 hash e.g. "hash_503_kyc" — None if no error
-    error_type      : W4 error type string — None if no error
-    decision        : what was decided e.g. "retry" | "escalate" — None if no error
-    decision_reason : plain-English reason for the decision
-    log_message     : detailed activity message for frontend
-    duration_ms     : how long the step took in milliseconds
-    """
-    import json
-
-    conn = get_connection()
-    try:
-        conn.execute(
-            """
-            INSERT INTO traces
-            (workflow_id, workflow_type, step_id, agent,
-             input_data, output_data, status,
-             error_hash, error_type, decision, decision_reason,
-             log_message, duration_ms, created_at)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,datetime('now','localtime'))
-            """,
-            (
-                workflow_id,
-                workflow_type,
-                step_id,
-                agent,
-                json.dumps(input_data)  if input_data  else None,
-                json.dumps(output_data) if output_data else None,
-                status,
-                error_hash,
-                error_type,
-                decision,
-                decision_reason,
-                log_message,
-                duration_ms,
-            ),
+    with Session(engine) as session:
+        trace = Trace(
+            workflow_id=workflow_id,
+            workflow_type=workflow_type,
+            step_id=step_id,
+            agent=agent,
+            status=status,
+            input_data=json.dumps(input_data) if input_data else None,
+            output_data=json.dumps(output_data) if output_data else None,
+            error_hash=error_hash,
+            error_type=error_type,
+            decision=decision,
+            decision_reason=decision_reason,
+            log_message=log_message,
+            duration_ms=duration_ms
         )
-        conn.commit()
-    finally:
-        conn.close()
-
+        session.add(trace)
+        session.commit()
 
 def read_pattern(error_hash: str) -> dict | None:
-    """
-    Reads one row from pattern_memory for the given error_hash.
-    Returns a plain dict or None if not found.
-
-    Used by W4 T14 to get the recommended action and success rate.
-    """
-    conn = get_connection()
-    try:
-        row = conn.execute(
-            "SELECT * FROM pattern_memory WHERE error_hash = ?",
-            (error_hash,),
-        ).fetchone()
-        if row is None:
-            return None
-        return dict(row)
-    finally:
-        conn.close()
-
+    with Session(engine) as session:
+        statement = select(PatternMemory).where(PatternMemory.error_hash == error_hash)
+        pattern = session.exec(statement).first()
+        return pattern.model_dump() if pattern else None
 
 def update_pattern(error_hash: str, retry_succeeded: bool):
-    """
-    Updates attempts and success_rate in pattern_memory.
-    Called by W4 T16 after every resolution.
-
-    If the error_hash does not exist yet, does nothing.
-    New patterns are inserted by W4 agent.py separately.
-    """
-    conn = get_connection()
-    try:
-        row = conn.execute(
-            "SELECT attempts, successes FROM pattern_memory WHERE error_hash = ?",
-            (error_hash,),
-        ).fetchone()
-
-        if row is None:
+    with Session(engine) as session:
+        statement = select(PatternMemory).where(PatternMemory.error_hash == error_hash)
+        pattern = session.exec(statement).first()
+        if not pattern:
             return
 
-        new_attempts  = row["attempts"]  + 1
-        new_successes = row["successes"] + (1 if retry_succeeded else 0)
-        new_rate      = new_successes / new_attempts
-
-        conn.execute(
-            """
-            UPDATE pattern_memory
-            SET attempts = ?,
-                successes = ?,
-                success_rate = ?,
-                last_seen_at = datetime('now','localtime')
-            WHERE error_hash = ?
-            """,
-            (new_attempts, new_successes, new_rate, error_hash),
-        )
-        conn.commit()
-    finally:
-        conn.close()
-
+        pattern.attempts += 1
+        pattern.successes += 1 if retry_succeeded else 0
+        pattern.success_rate = pattern.successes / pattern.attempts
+        pattern.last_seen_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        session.add(pattern)
+        session.commit()
 
 def count_affected_workflows(error_hash: str) -> tuple[int, list[str]]:
-    """
-    Counts how many distinct workflow_ids have this error_hash
-    in the traces table with status failed or escalated.
-
-    Returns (count, [workflow_id, ...])
-    Used by W4 T13 for cross-workflow detection.
-    """
-    conn = get_connection()
-    try:
-        rows = conn.execute(
-            """
-            SELECT DISTINCT workflow_id
-            FROM traces
-            WHERE error_hash = ?
-            AND status IN ('failed', 'escalated')
-            """,
-            (error_hash,),
-        ).fetchall()
-        affected = [row["workflow_id"] for row in rows]
-        return len(affected), affected
-    finally:
-        conn.close()
-
+    with Session(engine) as session:
+        statement = select(Trace.workflow_id).where(
+            Trace.error_hash == error_hash,
+            Trace.status.in_(["failed", "escalated"])
+        ).distinct()
+        results = session.exec(statement).all()
+        return len(results), list(results)
 
 def write_systemic_alert(
-    error_hash:         str,
-    error_type:         str,
+    error_hash: str,
+    error_type: str,
     affected_workflows: list[str],
-    context:            str = None,
+    context: str = None,
 ):
-    """
-    Inserts one row into systemic_alerts table.
-    Called by W4 T15 when count >= 3 workflows.
-    """
-    import json
-
-    conn = get_connection()
-    try:
-        conn.execute(
-            """
-            INSERT INTO systemic_alerts
-            (error_hash, error_type, affected_workflows,
-             occurrence_count, context, created_at)
-            VALUES (?,?,?,?,?,datetime('now','localtime'))
-            """,
-            (
-                error_hash,
-                error_type,
-                json.dumps(affected_workflows),
-                len(affected_workflows),
-                context,
-            ),
+    with Session(engine) as session:
+        alert = SystemicAlert(
+            error_hash=error_hash,
+            error_type=error_type,
+            affected_workflows=json.dumps(affected_workflows),
+            occurrence_count=len(affected_workflows),
+            context=context
         )
-        conn.commit()
-    finally:
-        conn.close()
-
+        session.add(alert)
+        session.commit()
 
 def get_workflow_tasks(workflow_id: str) -> list[dict]:
-    """
-    Returns all tasks (assigned and escalated) for a specific workflow.
-    """
-    conn = get_connection()
-    try:
-        rows = conn.execute(
-            "SELECT * FROM tasks WHERE workflow_id = ? ORDER BY created_at ASC",
-            (workflow_id,),
-        ).fetchall()
-        return [dict(row) for row in rows]
-    finally:
-        conn.close()
-
+    with Session(engine) as session:
+        statement = select(Task).where(Task.workflow_id == workflow_id).order_by(Task.created_at)
+        tasks = session.exec(statement).all()
+        return [t.model_dump() for t in tasks]
 
 def get_systemic_alerts() -> list[dict]:
-    """
-    Returns all unresolved systemic alerts.
-    """
-    conn = get_connection()
-    try:
-        rows = conn.execute(
-            "SELECT * FROM systemic_alerts WHERE resolved = 0 ORDER BY created_at DESC"
-        ).fetchall()
-        return [dict(row) for row in rows]
-    finally:
-        conn.close()
-
+    with Session(engine) as session:
+        statement = select(SystemicAlert).where(SystemicAlert.resolved == 0).order_by(SystemicAlert.created_at.desc())
+        alerts = session.exec(statement).all()
+        return [a.model_dump() for a in alerts]
 
 def get_briefing_history(limit: int = 10) -> list[dict]:
-    """
-    Returns recent generated briefings from the briefing_log.
-    """
-    conn = get_connection()
-    try:
-        rows = conn.execute(
-            "SELECT * FROM briefing_log ORDER BY created_at DESC LIMIT ?",
-            (limit,),
-        ).fetchall()
-        return [dict(row) for row in rows]
-    finally:
-        conn.close()
-
+    with Session(engine) as session:
+        statement = select(BriefingLog).order_by(BriefingLog.created_at.desc()).limit(limit)
+        briefings = session.exec(statement).all()
+        return [b.model_dump() for b in briefings]
 
 def get_all_traces(limit: int = 100) -> list[dict]:
-    """
-    Returns the most recent traces across all workflows.
-    """
-    conn = get_connection()
-    try:
-        rows = conn.execute(
-            "SELECT * FROM traces ORDER BY created_at DESC LIMIT ?",
-            (limit,),
-        ).fetchall()
-        return [dict(row) for row in rows]
-    finally:
-        conn.close()
-
+    with Session(engine) as session:
+        statement = select(Trace).order_by(Trace.created_at.desc()).limit(limit)
+        traces = session.exec(statement).all()
+        return [t.model_dump() for t in traces]
 
 def get_workflow_traces(workflow_id: str) -> list[dict]:
-    """
-    Returns all traces for a specific workflow_id.
-    """
-    conn = get_connection()
-    try:
-        rows = conn.execute(
-            "SELECT * FROM traces WHERE workflow_id = ? ORDER BY created_at ASC",
-            (workflow_id,),
-        ).fetchall()
-        return [dict(row) for row in rows]
-    finally:
-        conn.close()
-
+    with Session(engine) as session:
+        statement = select(Trace).where(Trace.workflow_id == workflow_id).order_by(Trace.created_at)
+        traces = session.exec(statement).all()
+        return [t.model_dump() for t in traces]
 
 def update_workflow_input(workflow_id: str, input_payload: dict):
-    """
-    Updates the input_payload for a specific workflow_id in the workflows table.
-    Used to persist human corrections (e.g. GSTIN) so they survive restarts.
-    """
-    import json
-    conn = get_connection()
-    try:
-        conn.execute(
-            "UPDATE workflows SET input_payload = ? WHERE workflow_id = ?",
-            (json.dumps(input_payload), workflow_id)
-        )
-        conn.commit()
-    finally:
-        conn.close()
+    with Session(engine) as session:
+        statement = select(Workflow).where(Workflow.workflow_id == workflow_id)
+        wf = session.exec(statement).first()
+        if wf:
+            wf.input_payload = json.dumps(input_payload)
+            wf.updated_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            session.add(wf)
+            session.commit()

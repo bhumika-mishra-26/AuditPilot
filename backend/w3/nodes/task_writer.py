@@ -29,70 +29,57 @@ def task_writer_node(state: dict) -> dict:
         log("Task Writer", f"Writing {len(assigned_tasks)} tasks to SQLite...")
     )
 
-    conn     = get_connection()
+    from sqlmodel import Session
+    from shared.db import engine
+    from shared.models import Task
+    
     written  = 0
     warnings = []
 
-    for t in assigned_tasks:
-        task_id  = f"TASK-{str(uuid.uuid4())[:6].upper()}"
-        owner    = t.get("owner", {})
-        deadline = t.get("deadline")
+    with Session(engine) as session:
+        for t in assigned_tasks:
+            task_id  = f"TASK-{str(uuid.uuid4())[:6].upper()}"
+            owner    = t.get("owner", {})
+            deadline = t.get("deadline")
 
-        # ── deadline warning ─────────────────────────────
-        deadline_flag = None
-        if deadline and deadline.lower() not in ("not specified", "none", ""):
+            # ── owner overload warning ───────────────────────
+            overload_flag = None
+            current_tasks = owner.get("current_tasks", 0)
+            if current_tasks >= 5:
+                overload_flag = (
+                    f"{owner.get('full_name', 'Owner')} already has "
+                    f"{current_tasks} tasks — may be overloaded"
+                )
+                warnings.append(overload_flag)
+                state["logs"].append(
+                    log("Task Writer", f"WARNING: {overload_flag}")
+                )
+
+            # ── write to tasks table ─────────────────────────
             try:
-                # simple check — if deadline looks like a past date
-                # for demo we just flag it as a note
-                deadline_flag = f"Deadline noted: {deadline}"
-            except Exception:
-                pass
-
-        # ── owner overload warning ───────────────────────
-        overload_flag = None
-        current_tasks = owner.get("current_tasks", 0)
-        if current_tasks >= 5:
-            overload_flag = (
-                f"{owner.get('full_name', 'Owner')} already has "
-                f"{current_tasks} tasks — may be overloaded"
-            )
-            warnings.append(overload_flag)
-            state["logs"].append(
-                log("Task Writer", f"WARNING: {overload_flag}")
-            )
-
-        # ── write to tasks table ─────────────────────────
-        try:
-            conn.execute(
-                """
-                INSERT OR IGNORE INTO tasks
-                (task_id, workflow_id, owner_id, owner_name,
-                 title, deadline, priority, status, created_at)
-                VALUES (?,?,?,?,?,?,?,?,datetime('now','localtime'))
-                """,
-                (
-                    task_id,
-                    wid,
-                    owner.get("id"),
-                    owner.get("full_name"),
-                    t.get("task"),
-                    deadline,
-                    t.get("priority", "medium"),
-                    "pending",
-                ),
-            )
-            written += 1
-            state["logs"].append(
-                log("Task Writer",
-                    f"Task '{t['task'][:40]}...' → {owner.get('full_name')} [OK]")
-            )
-        except Exception as e:
-            state["logs"].append(
-                log("Task Writer", f"Failed to write task: {e} [FAIL]")
-            )
-
-    conn.commit()
-    conn.close()
+                new_task = Task(
+                    task_id=task_id,
+                    workflow_id=wid,
+                    owner_id=str(owner.get("id", "")),
+                    owner_name=str(owner.get("full_name", "")),
+                    title=str(t.get("task", "")),
+                    deadline=str(deadline) if deadline else None,
+                    priority=str(t.get("priority", "medium")),
+                    status="pending",
+                    created_at=datetime.now()
+                )
+                session.add(new_task)
+                written += 1
+                state["logs"].append(
+                    log("Task Writer",
+                        f"Task '{t['task'][:40]}...' → {owner.get('full_name')} [OK]")
+                )
+            except Exception as e:
+                state["logs"].append(
+                    log("Task Writer", f"Failed to write task: {e} [FAIL]")
+                )
+        
+        session.commit()
 
     state["tasks_written"] = written
     state["logs"].append(

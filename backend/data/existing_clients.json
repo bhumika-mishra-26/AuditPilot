@@ -243,5 +243,19 @@
     "email": "finance@astrtfyyyanext.com",
     "gstin": "27ABCDE1234F1Z5",
     "onboarded_at": "2026-03-29"
+  },
+  {
+    "client_id": "C-66C5",
+    "name": "Astra Chemicals",
+    "email": "finance@astrafgrhnext.com",
+    "gstin": "27ABCDE1234F1Z5",
+    "onboarded_at": "2026-03-29"
+  },
+  {
+    "client_id": "C-1498",
+    "name": "Divick Chemicals",
+    "email": "finance@astrangthext.com",
+    "gstin": "27ABCDE1234F1Z5",
+    "onboarded_at": "2026-03-29"
   }
 ]

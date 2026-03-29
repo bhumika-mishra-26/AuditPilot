@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, Query
 from typing import List, Optional
+from sqlmodel import Session, select
 from api.deps.db import get_db
-import sqlite3
+from shared.models import Trace
 
 router = APIRouter()
 
@@ -10,29 +11,21 @@ async def get_traces(
     workflow_id: Optional[str] = None,
     outcome: Optional[str] = None,
     limit: int = Query(100, gt=0),
-    db: sqlite3.Connection = Depends(get_db)
+    db: Session = Depends(get_db)
 ):
     """
     Returns full trace rows for a workflow_id with optional outcome filter.
     Used by the trace explorer.
     """
-    query = "SELECT * FROM traces"
-    params = []
+    statement = select(Trace)
     
-    conditions = []
     if workflow_id:
-        conditions.append("workflow_id = ?")
-        params.append(workflow_id)
+        statement = statement.where(Trace.workflow_id == workflow_id)
         
     if outcome:
-        conditions.append("status = ?")
-        params.append(outcome)
+        statement = statement.where(Trace.status == outcome)
         
-    if conditions:
-        query += " WHERE " + " AND ".join(conditions)
-        
-    query += " ORDER BY created_at DESC LIMIT ?"
-    params.append(limit)
+    statement = statement.order_by(Trace.created_at.desc()).limit(limit)
     
-    rows = db.execute(query, params).fetchall()
-    return [dict(row) for row in rows]
+    results = db.exec(statement).all()
+    return [r.model_dump() for r in results]

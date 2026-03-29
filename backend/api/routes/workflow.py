@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
+from sqlmodel import Session, select, func
 from api.deps.db import get_db
-import sqlite3
+from shared.models import Workflow, Trace, PatternMemory
 import uuid
 import json
 from datetime import datetime
@@ -64,15 +65,15 @@ def _classify_task(user_task: str) -> dict:
 
 def _execute_workflow_task(workflow_id: str, workflow_type: str, input_payload: Dict[str, Any]):
     print(f"\n[DEBUG] [EXECUTOR] Starting execution for {workflow_id} ({workflow_type})\n")
-    from shared.db import get_connection
-    conn = get_connection()
+    from shared.db import SessionLocal
     
-    # Safety Check: Don't run if already completed or failed
-    current = conn.execute("SELECT status FROM workflows WHERE workflow_id = ?", (workflow_id,)).fetchone()
-    if current and current["status"] in ("completed", "failed"):
-        print(f"[DEBUG] [EXECUTOR] Skipping {workflow_id} - already {current['status']}")
-        conn.close()
-        return
+    with SessionLocal() as session:
+        # Safety Check: Don't run if already completed or failed
+        statement = select(Workflow).where(Workflow.workflow_id == workflow_id)
+        current = session.exec(statement).first()
+        if current and current.status in ("completed", "failed"):
+            print(f"[DEBUG] [EXECUTOR] Skipping {workflow_id} - already {current.status}")
+            return
     
     # Map friendly type to orchestrator route (bypass LLM classification for API runs)
     workflow_route_map = {
@@ -133,8 +134,6 @@ def _execute_workflow_task(workflow_id: str, workflow_type: str, input_payload: 
         if is_escalated:
             status = "escalated"
         else:
-            # Trust the orchestrator's reported success/error.
-            # If any sub-workflow failed, the whole thing is failed.
             results = final_state.get("workflow_results", [])
             any_failure = any(r.get("status") == "failed" for r in results)
             
@@ -143,22 +142,20 @@ def _execute_workflow_task(workflow_id: str, workflow_type: str, input_payload: 
             else:
                 status = "completed"
         
-        conn.execute(
-            "UPDATE workflows SET status = ?, updated_at = datetime('now','localtime') WHERE workflow_id = ?",
-            (status, workflow_id)
-        )
-        conn.commit()
+        if current:
+            current.status = status
+            current.updated_at = datetime.now()
+            session.add(current)
+            session.commit()
     except Exception as e:
-        conn.execute(
-            "UPDATE workflows SET status = 'failed', updated_at = datetime('now','localtime') WHERE workflow_id = ?",
-            (workflow_id,)
-        )
-        conn.commit()
-    finally:
-        conn.close()
+        if current:
+            current.status = "failed"
+            current.updated_at = datetime.now()
+            session.add(current)
+            session.commit()
 
 @router.post("/run", response_model=WorkflowResponse)
-async def run_workflow(request: RunRequest, background_tasks: BackgroundTasks, db: sqlite3.Connection = Depends(get_db)):
+async def run_workflow(request: RunRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     """
     Kicks off a workflow asynchronously. 
     Returns the workflow_id immediately.
@@ -171,10 +168,13 @@ async def run_workflow(request: RunRequest, background_tasks: BackgroundTasks, d
     
     try:
         # Register in DB
-        db.execute(
-            "INSERT INTO workflows (workflow_id, workflow_type, status, input_payload) VALUES (?, ?, 'running', ?)",
-            (workflow_id, request.workflow_type, json.dumps(request.input_payload))
+        new_workflow = Workflow(
+            workflow_id=workflow_id,
+            workflow_type=request.workflow_type,
+            status="running",
+            input_payload=json.dumps(request.input_payload)
         )
+        db.add(new_workflow)
         db.commit()
 
         background_tasks.add_task(_execute_workflow_task, workflow_id, request.workflow_type, request.input_payload)
@@ -187,7 +187,7 @@ async def run_workflow(request: RunRequest, background_tasks: BackgroundTasks, d
         raise HTTPException(status_code=500, detail=error_msg)
 
 @router.post("/start")
-async def start_workflow_nl(request: StartRequest, background_tasks: BackgroundTasks, db: sqlite3.Connection = Depends(get_db)):
+async def start_workflow_nl(request: StartRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     """
     Classifies natural language prompt and starts the appropriate workflow.
     """
@@ -202,47 +202,44 @@ async def start_workflow_nl(request: StartRequest, background_tasks: BackgroundT
     input_payload["original_prompt"] = request.prompt
     
     # For W3 (meeting), ensure notes is always set from the prompt.
-    # The LLM classifier or keyword fallback may not extract 'notes' reliably.
     if workflow_type == "meeting" and not input_payload.get("notes"):
         input_payload["notes"] = request.prompt
     
     workflow_id = str(uuid.uuid4())
-    db.execute(
-        "INSERT INTO workflows (workflow_id, workflow_type, status, input_payload) VALUES (?, ?, 'running', ?)",
-        (workflow_id, workflow_type, json.dumps(input_payload))
+    new_workflow = Workflow(
+        workflow_id=workflow_id,
+        workflow_type=workflow_type,
+        status="running",
+        input_payload=json.dumps(input_payload)
     )
+    db.add(new_workflow)
     db.commit()
     
     background_tasks.add_task(_execute_workflow_task, workflow_id, workflow_type, input_payload)
     return {"workflow_id": workflow_id, "workflow_type": workflow_type, "status": "running"}
 
 @router.get("/list")
-async def list_workflows(limit: int = 20, db: sqlite3.Connection = Depends(get_db)):
+async def list_workflows(limit: int = 20, db: Session = Depends(get_db)):
     """
     Returns a list of the most recent workflows from the workflows table.
     """
-    rows = db.execute(
-        "SELECT workflow_id, workflow_type, status, created_at FROM workflows ORDER BY created_at DESC LIMIT ?",
-        (limit,)
-    ).fetchall()
-    return [dict(row) for row in rows]
+    statement = select(Workflow).order_by(Workflow.created_at.desc()).limit(limit)
+    results = db.exec(statement).all()
+    return [r.model_dump() for r in results]
 
 # ── 2.2: GET /status and /graph ──────────────────────────
 
 @router.get("/status/{workflow_id}")
-async def get_workflow_status(workflow_id: str, db: sqlite3.Connection = Depends(get_db)):
+async def get_workflow_status(workflow_id: str, db: Session = Depends(get_db)):
     """
     Returns the status of all steps for a specific workflow_id.
     """
-    rows = db.execute(
-        "SELECT step_id, agent, status, created_at, error_type, decision_reason, log_message, input_data, output_data FROM traces WHERE workflow_id = ? ORDER BY created_at ASC",
-        (workflow_id,)
-    ).fetchall()
+    statement = select(Trace).where(Trace.workflow_id == workflow_id).order_by(Trace.created_at.asc())
+    results = db.exec(statement).all()
     
-    import json
     scalar_rows = []
-    for r in rows:
-        row = dict(r)
+    for r in results:
+        row = r.model_dump()
         for f in ["input_data", "output_data"]:
             if row.get(f) and isinstance(row[f], str):
                 try:
@@ -251,11 +248,9 @@ async def get_workflow_status(workflow_id: str, db: sqlite3.Connection = Depends
                     row[f] = {}
         scalar_rows.append(row)
     
-    workflow = db.execute("SELECT status, workflow_type, input_payload FROM workflows WHERE workflow_id = ?", (workflow_id,)).fetchone()
+    workflow_stmt = select(Workflow).where(Workflow.workflow_id == workflow_id)
+    workflow = db.exec(workflow_stmt).first()
     
-    # Try to get the latest logs from the traces (simulated or actual)
-    # Since logs aren't in a dedicated table yet, we'll return the ones from the workflow result
-    # For now, we'll just return the decision_reason as a log entry
     workflow_logs = []
     for r in scalar_rows:
         workflow_logs.append({
@@ -265,11 +260,10 @@ async def get_workflow_status(workflow_id: str, db: sqlite3.Connection = Depends
         })
     
     # Fetch patterns for memory panel
-    patterns = db.execute(
-        "SELECT error_hash as code, recommended_action as description, success_rate, attempts as total_fixes FROM pattern_memory LIMIT 5"
-    ).fetchall()
+    patterns_stmt = select(PatternMemory).limit(5)
+    patterns = db.exec(patterns_stmt).all()
 
-    # Hardcoded friendly mapping and options
+    # ... error_map remains the same ...
     error_map = {
         "EMAIL_MISSING": {
             "reason": "Please provide the missing client email address.",
@@ -316,35 +310,28 @@ async def get_workflow_status(workflow_id: str, db: sqlite3.Connection = Depends
     hitl_reason = None
     hitl_options = []
     
-    # Prefer the most recent escalated trace that has actionable error_type/options.
-    # The orchestrator also writes a generic 'escalated' trace with no error_type,
-    # so we must skip those and find the meaningful sub-agent trace.
     latest_escalated = None
     for r in reversed(scalar_rows):
         if r.get("status") == "escalated" and r.get("error_type"):
             latest_escalated = r
             break
-    # Fallback: any escalated trace if none had error_type
     if not latest_escalated:
         for r in reversed(scalar_rows):
             if r.get("status") == "escalated":
                 latest_escalated = r
                 break
 
-    if latest_escalated and workflow and workflow["status"] == "escalated":
+    if latest_escalated and workflow and workflow.status == "escalated":
         latest_error_type = latest_escalated.get("error_type")
         if latest_error_type and latest_error_type in error_map:
             hitl_reason = error_map[latest_error_type]["reason"]
             hitl_options = error_map[latest_error_type]["options"]
             
-            # Special handling for VENDOR_404 to include the vendor_id
             if latest_error_type == "HTTP_404_vendor_not_found":
-                # Try to find vendor_id in the trace's input_data
                 input_data = latest_escalated.get("input_data", {})
                 v_id = input_data.get("vendor_id", "Unknown")
                 hitl_reason = f"Vendor {v_id} not found in system. Please onboard or continue manually."
             
-            # Special handling for ambiguous owners in W3
             if latest_error_type == "HTTP_300_ambiguous_owner":
                 output_data = latest_escalated.get("output_data", {})
                 opts = output_data.get("options", [])
@@ -355,7 +342,6 @@ async def get_workflow_status(workflow_id: str, db: sqlite3.Connection = Depends
             hitl_reason = latest_escalated.get("decision_reason") or "Human intervention required to proceed."
             hitl_options = ["1 (continue)", "2 (cancel)"]
     else:
-        # Fallback: if there is no escalated step, still map error_type if available.
         last_error_type = None
         for r in reversed(scalar_rows):
             if r.get("error_type"):
@@ -365,7 +351,6 @@ async def get_workflow_status(workflow_id: str, db: sqlite3.Connection = Depends
             hitl_reason = error_map[last_error_type]["reason"]
             hitl_options = error_map[last_error_type]["options"]
 
-    # Extract summary if it exists in the result_summary trace
     summary = None
     for r in reversed(scalar_rows):
         if r.get("step_id") == "result_summary":
@@ -380,10 +365,10 @@ async def get_workflow_status(workflow_id: str, db: sqlite3.Connection = Depends
 
     return {
         "workflow_id": workflow_id,
-        "state": workflow["status"] if workflow else "unknown",
-        "type": workflow["workflow_type"] if workflow else "unknown",
+        "state": workflow.status if workflow else "unknown",
+        "type": workflow.workflow_type if workflow else "unknown",
         "steps": scalar_rows,
-        "patterns": [dict(p) for p in patterns],
+        "patterns": [p.model_dump() for p in patterns],
         "hitl_reason": hitl_reason,
         "hitl_options": hitl_options,
         "logs": workflow_logs,
@@ -391,31 +376,29 @@ async def get_workflow_status(workflow_id: str, db: sqlite3.Connection = Depends
     }
 
 @router.get("/graph/{workflow_id}")
-async def get_workflow_graph(workflow_id: str, db: sqlite3.Connection = Depends(get_db)):
+async def get_workflow_graph(workflow_id: str, db: Session = Depends(get_db)):
     """
     Returns nodes and edges for ReactFlow visualization.
     """
-    rows = db.execute(
-        "SELECT step_id, agent, status FROM traces WHERE workflow_id = ? ORDER BY created_at ASC",
-        (workflow_id,)
-    ).fetchall()
+    statement = select(Trace.step_id, Trace.agent, Trace.status).where(Trace.workflow_id == workflow_id).order_by(Trace.created_at.asc())
+    results = db.exec(statement).all()
     
     nodes = []
     edges = []
     
     # Simple linear layout for the graph based on traces
-    for i, row in enumerate(rows):
+    for i, row in enumerate(results):
         nodes.append({
-            "id": row["step_id"],
-            "data": {"label": f"{row['agent']} ({row['step_id']})"},
-            "status": row["status"],
+            "id": row[0],
+            "data": {"label": f"{row[1]} ({row[0]})"},
+            "status": row[2],
             "position": {"x": 250, "y": i * 100}
         })
         if i > 0:
             edges.append({
                 "id": f"e{i-1}-{i}",
-                "source": rows[i-1]["step_id"],
-                "target": row["step_id"]
+                "source": results[i-1][0],
+                "target": row[0]
             })
             
     return {"nodes": nodes, "edges": edges}
@@ -427,58 +410,42 @@ class ResumeRequest(BaseModel):
     human_resolution: str = ""
 
 @router.post("/resume/{workflow_id}")
-async def resume_workflow(workflow_id: str, payload: ResumeRequest, background_tasks: BackgroundTasks, step_id: Optional[str] = None, db: sqlite3.Connection = Depends(get_db)):
+async def resume_workflow(workflow_id: str, payload: ResumeRequest, background_tasks: BackgroundTasks, step_id: Optional[str] = None, db: Session = Depends(get_db)):
     """
-    Resumes an escalated workflow. If step_id is not provided, finds the first 'escalated' step.
-    Accepts input payload to pass any manually resolved human input.
+    Resumes an escalated workflow.
     """
     if not step_id:
-        # Resume the most recent escalated step to avoid re-triggering older HITL pauses.
-        row = db.execute(
-            "SELECT step_id FROM traces WHERE workflow_id = ? AND status = 'escalated' ORDER BY created_at DESC LIMIT 1",
-            (workflow_id,),
-        ).fetchone()
-        if not row:
+        stmt = select(Trace.step_id).where(Trace.workflow_id == workflow_id, Trace.status == "escalated").order_by(Trace.created_at.desc())
+        step_id = db.exec(stmt).first()
+        if not step_id:
             raise HTTPException(status_code=400, detail="No escalated step found to resume")
-        step_id = row["step_id"]
 
-    # Fetch the error type BEFORE clearing the escalated status!
-    latest_error = db.execute(
-        "SELECT error_type FROM traces WHERE workflow_id = ? AND status = 'escalated' ORDER BY created_at DESC LIMIT 1",
-        (workflow_id,)
-    ).fetchone()
-    expected_error = latest_error["error_type"] if latest_error else None
+    # Fetch error type
+    error_stmt = select(Trace.error_type).where(Trace.workflow_id == workflow_id, Trace.status == "escalated").order_by(Trace.created_at.desc())
+    expected_error = db.exec(error_stmt).first()
 
-    # Clear stale escalations so the resumed run doesn't get blocked again by an older HITL step.
-    db.execute(
-        "UPDATE traces SET status = 'pending' WHERE workflow_id = ? AND status = 'escalated'",
-        (workflow_id,),
-    )
+    # Clear stale escalations
+    traces_to_update = db.exec(select(Trace).where(Trace.workflow_id == workflow_id, Trace.status == "escalated")).all()
+    for t in traces_to_update:
+        t.status = "pending"
+        db.add(t)
 
-    db.execute(
-        "UPDATE traces SET status = 'pending' WHERE workflow_id = ? AND step_id = ?",
-        (workflow_id, step_id)
-    )
-    db.execute(
-        "UPDATE workflows SET status = 'running', updated_at = datetime('now','localtime') WHERE workflow_id = ?",
-        (workflow_id,)
-    )
-    db.commit()
-    
-    # Fetch original payload to restart
-    row = db.execute("SELECT workflow_type, input_payload FROM workflows WHERE workflow_id = ?", (workflow_id,)).fetchone()
-    if not row:
+    # Update workflow status
+    workflow = db.exec(select(Workflow).where(Workflow.workflow_id == workflow_id)).first()
+    if not workflow:
         raise HTTPException(status_code=404, detail="Workflow not found")
         
-    input_data = json.loads(row["input_payload"])
-    # Mark this run as a resume so the API executor bypasses LLM classification.
+    workflow.status = "running"
+    workflow.updated_at = datetime.now()
+    db.add(workflow)
+    db.commit()
+    
+    input_data = json.loads(workflow.input_payload)
     input_data["__bypass_llm"] = True
     if payload.input or payload.human_resolution:
         raw = (payload.input or payload.human_resolution).strip()
         input_data["human_resolution"] = raw
 
-        # EXCLUSION LIST: do NOT treat these as name/email corrections
-        # These are buttons or command keywords.
         ACTION_KEYWORDS = (
             "submit_email", "submit_name", "correct", 
             "approve_account", "reject_account", "merge_duplicate", 
@@ -486,33 +453,24 @@ async def resume_workflow(workflow_id: str, payload: ResumeRequest, background_t
             "manual_docs_upload", "cancel_onboarding",
             "onboard_vendor", "onboard_member",
             "reassign_to_me", "skip_task", "skip_gstin",
-            "1", "2", "3", "continue", "reject", "approve", "cancel",
-            "approve_account", "reject_account"
+            "1", "2", "3", "continue", "reject", "approve", "cancel"
         )
 
-        # Persist common HITL corrections directly into the payload so they survive restarts
-        # and don't depend on the LLM classifier extracting them again.
         looks_like_email = ("@" in raw) and ("." in raw) and (" " not in raw) and (len(raw) <= 320)
         looks_like_gstin = (len(raw) == 15) and raw.isalnum()
-
-        # (latest_error was fetched safely above before it was cleared from the DB)
 
         if looks_like_email and expected_error == "EMAIL_MISSING":
             input_data["email"] = raw
         elif looks_like_gstin and expected_error == "GSTIN_format_invalid":
             input_data["gstin"] = raw
         elif raw and raw.lower() not in ACTION_KEYWORDS:
-            # If it's a generic text entry and we were waiting for a name
             if expected_error == "NAME_MISSING" and len(raw) <= 120:
                 input_data["name"] = raw
                 input_data["client_name"] = raw
 
-        db.execute(
-            "UPDATE workflows SET input_payload = ? WHERE workflow_id = ?",
-            (json.dumps(input_data), workflow_id),
-        )
+        workflow.input_payload = json.dumps(input_data)
+        db.add(workflow)
         db.commit()
         
-    background_tasks.add_task(_execute_workflow_task, workflow_id, row["workflow_type"], input_data)
-    
+    background_tasks.add_task(_execute_workflow_task, workflow_id, workflow.workflow_type, input_data)
     return {"message": "Workflow resumed", "workflow_id": workflow_id}

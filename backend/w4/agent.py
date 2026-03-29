@@ -225,31 +225,30 @@ def t16_update_pattern(
         new_successes = 1 if retry_succeeded else 0
         new_rate      = new_successes / new_attempts
 
-        conn = get_connection()
-        try:
-            conn.execute(
-                """
-                INSERT OR IGNORE INTO pattern_memory
-                (error_hash, error_type, agent, recommended_action,
-                 attempts, successes, success_rate,
-                 last_seen_at, context,
-                 systemic_flag, last_systemic_at)
-                VALUES (?,?,?,?,?,?,?,datetime('now','localtime'),?,0,NULL)
-                """,
-                (
-                    error_hash,
-                    error_hash.replace("hash_", "").upper(),
-                    "w4_agent",
-                    "retry" if new_rate >= RETRY_THRESHOLD else "escalate",
-                    new_attempts,
-                    new_successes,
-                    new_rate,
-                    "New error type — first occurrence recorded",
-                ),
-            )
-            conn.commit()
-        finally:
-            conn.close()
+        from sqlmodel import Session
+        from shared.db import engine
+        from shared.models import PatternMemory
+        from datetime import datetime
+
+        with Session(engine) as session:
+            try:
+                new_pattern = PatternMemory(
+                    error_hash=error_hash,
+                    error_type=error_hash.replace("hash_", "").upper(),
+                    agent="w4_agent",
+                    recommended_action="retry" if new_rate >= RETRY_THRESHOLD else "escalate",
+                    attempts=new_attempts,
+                    successes=new_successes,
+                    success_rate=new_rate,
+                    last_seen_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    context="New error type — first occurrence recorded",
+                    systemic_flag=0
+                )
+                session.add(new_pattern)
+                session.commit()
+            except Exception as e:
+                print(f"  [WARN] W4 pattern_memory write failed: {e}")
+                session.rollback()
 
         print(log_step(
             "W4 Agent", "T16_update_pattern",
