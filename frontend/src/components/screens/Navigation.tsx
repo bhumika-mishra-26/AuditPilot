@@ -17,6 +17,7 @@ import {
   User,
   Zap,
 } from 'lucide-react';
+import { checkBackendHealth } from '../../lib/api';
 
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -176,12 +177,8 @@ export const Topbar = ({ userEmail = 'System Operator' }: { userEmail?: string }
   React.useEffect(() => {
     let mounted = true;
     const checkHealth = async () => {
-      try {
-        const res = await fetch("http://localhost:8000/api/v1/health", { signal: AbortSignal.timeout(3000) });
-        if (mounted) setIsConnected(res.ok);
-      } catch {
-        if (mounted) setIsConnected(false);
-      }
+      const isOk = await checkBackendHealth();
+      if (mounted) setIsConnected(isOk);
     };
     checkHealth();
     const interval = setInterval(checkHealth, 5000);
