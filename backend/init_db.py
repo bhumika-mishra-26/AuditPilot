@@ -11,6 +11,12 @@ from shared.models import PatternMemory, Trace, Client, PurchaseOrder, Task, Sys
 from datetime import datetime
 import json
 import os
+import time
+
+# Force IST timezone on cloud deployments (Render/Linux) to fix log dates
+os.environ["TZ"] = "Asia/Kolkata"
+if hasattr(time, "tzset"):
+    time.tzset()
 
 def create_tables() -> None:
     print("  Creating tables via SQLModel...")

@@ -13,6 +13,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 if str(BASE_DIR) not in sys.path:
     sys.path.append(str(BASE_DIR))
 
+# Force IST timezone on cloud deployments (Render/Linux) to fix log dates
+os.environ["TZ"] = "Asia/Kolkata"
+import time
+if hasattr(time, "tzset"):
+    time.tzset()
+
 os.environ["API_MODE"] = "1"
 
 # Create app
