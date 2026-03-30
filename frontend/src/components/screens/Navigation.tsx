@@ -176,9 +176,19 @@ export const Topbar = ({ userEmail = 'System Operator' }: { userEmail?: string }
 
   React.useEffect(() => {
     let mounted = true;
+    let failCount = 0;
     const checkHealth = async () => {
       const isOk = await checkBackendHealth();
-      if (mounted) setIsConnected(isOk);
+      if (!mounted) return;
+      if (isOk) {
+        failCount = 0;
+        setIsConnected(true);
+      } else {
+        failCount += 1;
+        if (failCount >= 2) {
+          setIsConnected(false);
+        }
+      }
     };
     checkHealth();
     const interval = setInterval(checkHealth, 5000);

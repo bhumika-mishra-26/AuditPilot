@@ -7,7 +7,7 @@ Uses SQLModel to create tables and seed initial data.
 
 from sqlmodel import SQLModel, Session, select, func
 from shared.db import engine
-from shared.models import PatternMemory, Trace, Client, PurchaseOrder, Task, SystemicAlert, BriefingLog, Workflow, Vendor
+from shared.models import PatternMemory, Trace, Client, PurchaseOrder, Task, SystemicAlert, BriefingLog, Workflow, Vendor, TeamMember
 from datetime import datetime
 import json
 import os
@@ -18,16 +18,37 @@ def create_tables() -> None:
     print("  All tables created successfully.")
 
 def seed_vendors() -> None:
-    # Path relative to the script location
-    path = os.path.join(os.path.dirname(__file__), "data", "vendors.json")
-    if not os.path.exists(path):
-        print(f"  [WARN] vendors.json not found at {path}")
-        return
+    data = [
+        {
+            "vendor_id": "V-MEH-001",
+            "name": "Mehta Textiles Ltd",
+            "gstin": "27AAPFM0939F1ZV",
+            "status": "active",
+            "risk": "Low",
+            "spend": "$1200",
+            "purpose": "Textile raw material supply"
+        },
+        {
+            "vendor_id": "V-REL-002",
+            "name": "Reliance Industrial",
+            "gstin": "24AAACR1234E1Z5",
+            "status": "inactive",
+            "risk": "Medium",
+            "spend": "$4500",
+            "purpose": "Chemical processing"
+        },
+        {
+            "vendor_id": "V-TATA-003",
+            "name": "Tata Steel",
+            "gstin": "20AAACT0001A1Z1",
+            "status": "active",
+            "risk": "Low",
+            "spend": "$15000",
+            "purpose": "Steel construction"
+        }
+    ]
 
     try:
-        with open(path, "r") as f:
-            data = json.load(f)
-        
         with Session(engine) as session:
             for item in data:
                 vendor = Vendor(
@@ -41,9 +62,50 @@ def seed_vendors() -> None:
                 )
                 session.merge(vendor)
             session.commit()
-            print(f"  Seeded {len(data)} vendors from JSON.")
+            print(f"  Seeded {len(data)} vendors from code.")
     except Exception as e:
         print(f"  [ERROR] Failed to seed vendors: {e}")
+
+def seed_team_members() -> None:
+    data = [
+        {
+            "id": "TM-KAR-101",
+            "full_name": "Kartik Pandey",
+            "email": "kartik.pandey@company.in",
+            "role": "Admin",
+            "current_tasks": 0
+        },
+        {
+            "id": "TM-MEH-102",
+            "full_name": "Mehta Sharma",
+            "email": "mehta.sharma@company.in",
+            "role": "Reviewer",
+            "current_tasks": 2
+        },
+        {
+            "id": "TM-AMO-103",
+            "full_name": "Amol Deshmukh",
+            "email": "amol.d@company.in",
+            "role": "Team Member",
+            "current_tasks": 1
+        }
+    ]
+
+    try:
+        with Session(engine) as session:
+            for item in data:
+                member = TeamMember(
+                    id=item.get("id"),
+                    full_name=item.get("full_name"),
+                    email=item.get("email"),
+                    role=item.get("role", "Team Member"),
+                    current_tasks=item.get("current_tasks", 0)
+                )
+                session.merge(member)
+            session.commit()
+            print(f"  Seeded {len(data)} team members from code.")
+    except Exception as e:
+        print(f"  [ERROR] Failed to seed team members: {e}")
 
 def seed_pattern_memory() -> None:
     with Session(engine) as session:
@@ -143,7 +205,7 @@ def seed_test_traces() -> None:
 def verify() -> None:
     print("\n  Verifying table counts:")
     with Session(engine) as session:
-        tables = [PatternMemory, Trace, Client, PurchaseOrder, Task, SystemicAlert, BriefingLog, Workflow, Vendor]
+        tables = [PatternMemory, Trace, Client, PurchaseOrder, Task, SystemicAlert, BriefingLog, Workflow, Vendor, TeamMember]
         for table in tables:
             try:
                 count = session.exec(select(func.count()).select_from(table)).one()
@@ -154,6 +216,7 @@ def verify() -> None:
 def main() -> None:
     create_tables()
     seed_vendors()
+    seed_team_members()
     seed_pattern_memory()
     seed_existing_clients()
     seed_test_traces()

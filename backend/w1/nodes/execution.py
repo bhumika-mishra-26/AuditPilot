@@ -2,81 +2,52 @@
 w1/nodes/execution.py  —  T4
 
 Creates client account and persists to:
-  1. existing_clients.json  — for duplicate check on next run
-  2. SQLite clients table   — permanent record in DB
+  SQLite/Postgres clients table — permanent record in DB
 
 Writes one trace row to SQLite on completion.
 """
 
 import uuid
 import random
-import json
 import time
 from datetime import datetime
-from pathlib import Path
+from sqlmodel import Session
 from shared.logger import log
-from shared.db import write_trace, get_connection
+from shared.db import write_trace, engine
+from shared.models import Client
 from w1.utils.hitl import ask_choice
 
-DATA_FILE = Path(__file__).resolve().parent.parent.parent / "data" / "existing_clients.json"
 
-
-def _load_existing_clients() -> list:
-    if not DATA_FILE.exists():
-        return []
-    with DATA_FILE.open("r", encoding="utf-8") as f:
-        return json.load(f)
-
-
-def _save_existing_clients(clients: list) -> None:
-    with DATA_FILE.open("w", encoding="utf-8") as f:
-        json.dump(clients, f, indent=2)
-
-
-def _persist_client_json(state: dict) -> str:
-    """Writes new client to existing_clients.json for duplicate detection."""
-    payload   = state["input"]
-    client_id = payload.get("client_id")
-    clients   = _load_existing_clients()
-
-    if any(c.get("client_id") == client_id for c in clients):
-        return "already_exists"
-
-    clients.append({
-        "client_id"   : client_id,
-        "name"        : payload.get("name"),
-        "email"       : payload.get("email"),
-        "gstin"       : payload.get("gstin"),
-        "onboarded_at": datetime.now().strftime("%Y-%m-%d"),
-    })
-    _save_existing_clients(clients)
-    return "saved"
-
-
-def _persist_client_db(state: dict) -> None:
+def _persist_client_db(state: dict) -> str:
     """Writes newly onboarded client to SQLModel clients table."""
-    from sqlmodel import Session
-    from shared.db import engine
-    from shared.models import Client
-    
     payload = state["input"]
+    client_id = payload.get("client_id")
+    
     with Session(engine) as session:
         try:
+            # Check if already exists in DB
+            from sqlmodel import select
+            existing = session.exec(select(Client).where(Client.client_id == client_id)).first()
+            if existing:
+                return "already_exists"
+
             client = Client(
-                client_id=payload.get("client_id"),
+                client_id=client_id,
                 name=payload.get("name"),
                 email=payload.get("email"),
                 phone=payload.get("phone", ""),
                 gstin=payload.get("gstin"),
                 business_type=payload.get("business_type", ""),
-                onboarded_at=datetime.now(),
+                onboarded_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 status="active"
             )
             session.add(client)
             session.commit()
+            return "saved"
         except Exception as e:
             print(f"  [WARN] SQLModel clients write failed: {e}")
             session.rollback()
+            return "error"
 
 
 def create_account_node(state: dict) -> dict:
@@ -94,9 +65,7 @@ def create_account_node(state: dict) -> dict:
 
     if human_res in ("approve_account", "approve", "1"):
         state["logs"].append(log("Execution Agent", "Approval received via API/Human resolution [OK]"))
-        # skip blocking ask_choice
     elif human_res in ("reject_account", "reject", "0", "cancel", "2"):
-        # API/Human-driven rejection: write failure trace and end graph.
         state["logs"].append(log("Execution Agent", "Rejection received via API/Human resolution [OK]"))
         write_trace(
             workflow_id = wid, workflow_type = "W1",
@@ -115,7 +84,6 @@ def create_account_node(state: dict) -> dict:
         state["logs"].append(log("Execution Agent", "Ready to create account"))
         state["logs"].append(log("Escalation Agent", "Awaiting human approval..."))
         
-        # Write trace BEFORE blocking
         write_trace(
             workflow_id = wid, workflow_type = "W1",
             step_id = "T4", agent = "execution_agent",
@@ -164,22 +132,19 @@ def create_account_node(state: dict) -> dict:
         f"Account created: {account_id} (time: {duration}s, confidence: {confidence}) [OK]",
     ))
 
-    # ── persist to JSON (for duplicate detection) ────────
-    persist_status = _persist_client_json(state)
+    # ── persist to DB ────────────────────────────────────
+    persist_status = _persist_client_db(state)
     if persist_status == "saved":
         state["logs"].append(
-            log("Execution Agent", "Client record persisted to existing_clients.json [OK]")
+            log("Execution Agent", "Client record written to database [OK]")
+        )
+    elif persist_status == "already_exists":
+        state["logs"].append(
+            log("Execution Agent", "Client already in database, skipping write [OK]")
         )
     else:
         state["logs"].append(
-            log("Execution Agent", "Client already in JSON, skipping write [OK]")
-        )
-
-    # ── persist to SQLite clients table ──────────────────
-    if persist_status == "saved":
-        _persist_client_db(state)
-        state["logs"].append(
-            log("Execution Agent", "Client record written to SQLite clients table [OK]")
+            log("Execution Agent", "Database write error occurred [WARN]")
         )
 
     write_trace(

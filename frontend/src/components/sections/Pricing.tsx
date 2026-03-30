@@ -78,7 +78,7 @@ export const Pricing = () => {
   return (
     <section id="pricing" className="py-24 relative overflow-hidden bg-[#020202]">
       {/* Background Ambience */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl h-[400px] bg-indigo-500/10 blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl h-[400px] bg-orange-500/10 blur-[120px] rounded-full pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         <div className="text-center mb-16 max-w-2xl mx-auto">
@@ -86,7 +86,7 @@ export const Pricing = () => {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-mono font-bold uppercase tracking-wider mb-6"
+            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-mono font-bold uppercase tracking-wider mb-6"
           >
             <Shield className="w-3.5 h-3.5" />
             Designed for Scale
@@ -99,7 +99,7 @@ export const Pricing = () => {
             className="text-4xl md:text-5xl font-bold text-white font-heading tracking-tight mb-6"
           >
             Enterprise Workflows. 
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-violet-400">
+            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-400">
               Usage-Based Transparency.
             </span>
           </motion.h2>
@@ -124,12 +124,12 @@ export const Pricing = () => {
             <span className={`text-sm font-semibold transition-colors ${!isYearly ? 'text-white' : 'text-gray-500'}`}>Monthly</span>
             <button
               onClick={() => setIsYearly(!isYearly)}
-              className="relative w-16 h-8 rounded-full bg-white/5 border border-white/10 p-1 flex items-center transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+              className="relative w-16 h-8 rounded-full bg-white/5 border border-white/10 p-1 flex items-center transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-orange-500/50"
             >
               <motion.div
                 animate={{ x: isYearly ? 32 : 0 }}
                 transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                className="w-6 h-6 rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]"
+                className="w-6 h-6 rounded-full bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.5)]"
               />
             </button>
             <div className="flex items-center gap-2">
@@ -152,12 +152,12 @@ export const Pricing = () => {
               transition={{ delay: index * 0.15, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
               className={`relative rounded-3xl p-8 bg-black/40 backdrop-blur-xl border ${
                 plan.popular 
-                  ? 'border-indigo-500 shadow-[0_0_40px_rgba(99,102,241,0.15)]' 
+                  ? 'border-orange-500 shadow-[0_0_40px_rgba(249,115,22,0.15)]' 
                   : 'border-white/[0.08] hover:border-white/[0.15]'
               } transition-colors flex flex-col h-full group`}
             >
               {plan.popular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-indigo-500 text-white text-[10px] font-bold uppercase tracking-widest rounded-full shadow-[0_0_15px_rgba(99,102,241,0.6)] flex items-center gap-1.5 whitespace-nowrap">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-orange-500 text-white text-[10px] font-bold uppercase tracking-widest rounded-full shadow-[0_0_15px_rgba(249,115,22,0.6)] flex items-center gap-1.5 whitespace-nowrap">
                   <Star className="w-3 h-3 fill-current" />
                   Most Popular
                 </div>
@@ -187,7 +187,7 @@ export const Pricing = () => {
                 onClick={() => handleSelectPlan(plan.id)}
                 className={`w-full py-3.5 px-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all mb-8 shadow-sm ${
                   plan.popular
-                    ? 'bg-indigo-600 hover:bg-indigo-500 text-white hover:shadow-[0_0_20px_rgba(99,102,241,0.4)]'
+                    ? 'bg-orange-600 hover:bg-orange-500 text-white hover:shadow-[0_0_20px_rgba(249,115,22,0.4)]'
                     : 'bg-white/5 hover:bg-white/10 text-white border border-white/10'
                 }`}
               >
@@ -226,8 +226,8 @@ export const Pricing = () => {
           className="mt-16 bg-black/50 backdrop-blur-xl border border-white/10 rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6"
         >
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center shrink-0">
-              <Rocket className="w-6 h-6 text-indigo-400" />
+            <div className="w-12 h-12 rounded-xl bg-orange-500/20 border border-orange-500/30 flex items-center justify-center shrink-0">
+              <Rocket className="w-6 h-6 text-orange-400" />
             </div>
             <div>
               <h4 className="text-white font-bold mb-1">Scale as you Audit</h4>
@@ -236,12 +236,12 @@ export const Pricing = () => {
           </div>
           <div className="flex flex-wrap items-center gap-6">
             <div className="text-center md:text-left">
-              <span className="block text-2xl font-black text-indigo-300">₹0.5</span>
+              <span className="block text-2xl font-black text-orange-300">₹0.5</span>
               <span className="text-xs text-gray-500 font-mono tracking-widest uppercase">Per LLM Call</span>
             </div>
             <div className="w-px h-8 bg-white/10 hidden md:block"></div>
             <div className="text-center md:text-left">
-              <span className="block text-2xl font-black text-violet-300">₹2.0</span>
+              <span className="block text-2xl font-black text-amber-300">₹2.0</span>
               <span className="text-xs text-gray-500 font-mono tracking-widest uppercase">Per Extra Workflow</span>
             </div>
           </div>

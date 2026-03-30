@@ -25,7 +25,8 @@ app = FastAPI(
 # ✅ CORS MIDDLEWARE (MUST BE RIGHT AFTER APP INIT)
 origins = [
     "https://audit-pilot-lemon.vercel.app",
-    "http://localhost:3000",  # local dev
+    "http://localhost:3000",
+    "http://localhost:5173",  # default Vite port
 ]
 
 app.add_middleware(

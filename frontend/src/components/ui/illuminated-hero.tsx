@@ -105,12 +105,11 @@ export function IlluminatedHero() {
 
 	const circleStyle: React.CSSProperties = {
 		boxShadow: `
-			inset 0 0 60px 10px rgba(99, 102, 241, 0.4),
-			inset 0 0 150px 40px rgba(124, 58, 237, 0.15),
-			0 0 80px 20px rgba(99, 102, 241, 0.25),
-			0 0 160px 60px rgba(79, 70, 229, 0.12)
+			inset 0 0 40px 5px rgba(255, 140, 60, 0.25),
+			inset 0 0 100px 20px rgba(255, 140, 60, 0.15),
+			0 0 60px 15px rgba(255, 140, 60, 0.15)
 		`,
-		border: '1.5px solid rgba(99, 102, 241, 0.35)',
+		border: '1.5px solid rgba(255, 140, 60, 0.2)',
 	};
 
 	return (
@@ -124,13 +123,13 @@ export function IlluminatedHero() {
 					{/* Top Circle */}
 					<div
 						ref={topCircleRef}
-						className="absolute top-0 left-0 right-0 h-[95%] rounded-[100em] border-[1.5px] border-indigo-500/40 shadow-[0_0_80px_rgba(99,102,241,0.4)]"
+						className="absolute top-0 left-0 right-0 h-[95%] rounded-[100em] opacity-80"
 						style={{ ...circleStyle, transform: 'translateY(-60%) scale(1.25)', transformOrigin: 'center center', willChange: 'transform' }}
 					/>
 					{/* Bottom Circle */}
 					<div
 						ref={bottomCircleRef}
-						className="absolute bottom-0 left-0 right-0 h-[95%] rounded-[100em] border-[1.5px] border-indigo-500/40 shadow-[0_0_80px_rgba(99,102,241,0.4)]"
+						className="absolute bottom-0 left-0 right-0 h-[95%] rounded-[100em] opacity-80"
 						style={{ ...circleStyle, transform: 'translateY(35%) scale(1.4)', transformOrigin: 'center center', willChange: 'transform' }}
 					/>
 				</div>
@@ -165,7 +164,7 @@ export function IlluminatedHero() {
 					className="mt-4 max-w-[28em] bg-gradient-to-t from-[#86868b] to-[#bdc2c9] bg-clip-text text-center font-semibold text-transparent px-4"
 				>
 					Monitor. Execute. Explain.{' '}
-					<span className="relative inline-block font-black text-[#e0e7ff]">AI Operations</span>{' '}
+					<span className="relative inline-block font-black text-[#e7dfd6]">AI Operations</span>{' '}
 					built for modern audit workflows at scale.
 				</p>
 			</div>
