@@ -32,10 +32,10 @@ const LoadingFallback = () => (
       transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
       className="flex flex-col items-center gap-4"
     >
-      <div className="w-10 h-10 rounded-xl border border-indigo-500/40 bg-indigo-500/10 flex items-center justify-center">
-        <div className="w-4 h-4 rounded-full bg-indigo-400 animate-ping" />
+      <div className="w-10 h-10 rounded-xl border border-orange-500/40 bg-orange-500/10 flex items-center justify-center">
+        <div className="w-4 h-4 rounded-full bg-orange-400 animate-ping" />
       </div>
-      <p className="text-[10px] font-mono text-indigo-400 uppercase tracking-[0.3em]">
+      <p className="text-[10px] font-mono text-orange-400 uppercase tracking-[0.3em]">
         Initializing Module...
       </p>
     </motion.div>
@@ -89,7 +89,7 @@ export default function App() {
   const location = useLocation();
 
   return (
-    <div className="min-h-screen bg-[#020202] font-sans text-gray-100 selection:bg-indigo-500/30 selection:text-indigo-200">
+    <div className="min-h-screen bg-[#020202] font-sans text-gray-100 selection:bg-orange-500/30 selection:text-orange-200">
       <SVGFilters />
       <FluidBackground />
 

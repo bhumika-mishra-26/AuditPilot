@@ -107,3 +107,12 @@ class Vendor(SQLModel, table=True):
     spend: Optional[str] = Field(default="$0")
     purpose: Optional[str] = None
     created_at: str = Field(default_factory=lambda: datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+
+class TeamMember(SQLModel, table=True):
+    __tablename__ = "team_members"
+    id: str = Field(primary_key=True)
+    full_name: str
+    email: str = Field(unique=True)
+    role: str = Field(default="Team Member")
+    current_tasks: int = Field(default=0)
+    created_at: str = Field(default_factory=lambda: datetime.now().strftime("%Y-%m-%d %H:%M:%S"))

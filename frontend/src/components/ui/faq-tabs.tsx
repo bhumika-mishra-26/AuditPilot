@@ -90,7 +90,7 @@ export const FAQTabs = ({
 
 const FAQHeader = ({ title, subtitle }: { title: string; subtitle: string }) => (
   <div className="relative z-10 flex flex-col items-center justify-center mb-12">
-    <span className="mb-4 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-mono font-bold uppercase tracking-wider">
+    <span className="mb-4 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-mono font-bold uppercase tracking-wider">
       {subtitle}
     </span>
     <h2 className="text-4xl md:text-5xl font-bold font-heading text-white">{title}</h2>
@@ -106,7 +106,7 @@ const FAQTabsNav = ({ categories, selected, setSelected }: { categories: Record<
         className={cn(
           "relative overflow-hidden whitespace-nowrap rounded-xl border px-5 py-2.5 text-sm font-bold transition-all duration-300 shadow-sm",
           selected === key
-            ? "border-indigo-500 text-white shadow-[0_0_20px_rgba(99,102,241,0.3)]"
+            ? "border-orange-500 text-white shadow-[0_0_20px_rgba(249,115,22,0.3)]"
             : "border-white/10 bg-black/40 text-gray-400 hover:text-white hover:bg-white/5"
         )}
       >
@@ -118,7 +118,7 @@ const FAQTabsNav = ({ categories, selected, setSelected }: { categories: Record<
               animate={{ y: "0%" }}
               exit={{ y: "100%" }}
               transition={{ duration: 0.5, ease: "backIn" }}
-              className="absolute inset-0 z-0 bg-indigo-600"
+              className="absolute inset-0 z-0 bg-orange-600"
             />
           )}
         </AnimatePresence>
@@ -161,7 +161,7 @@ const FAQItem = ({ question, answer }: { question: string, answer: string }) => 
       animate={isOpen ? "open" : "closed"}
       className={cn(
         "rounded-2xl border transition-colors backdrop-blur-md overflow-hidden",
-        isOpen ? "bg-indigo-500/10 border-indigo-500/30" : "bg-black/40 border-white/10 hover:bg-white/5"
+        isOpen ? "bg-orange-500/10 border-orange-500/30" : "bg-black/40 border-white/10 hover:bg-white/5"
       )}
     >
       <button
@@ -171,7 +171,7 @@ const FAQItem = ({ question, answer }: { question: string, answer: string }) => 
         <span
           className={cn(
             "text-lg font-bold transition-colors",
-            isOpen ? "text-indigo-300" : "text-white"
+            isOpen ? "text-orange-300" : "text-white"
           )}
         >
           {question}
@@ -187,7 +187,7 @@ const FAQItem = ({ question, answer }: { question: string, answer: string }) => 
           <Plus
             className={cn(
               "h-4 w-4 transition-colors",
-              isOpen ? "text-indigo-400" : "text-gray-400"
+              isOpen ? "text-orange-400" : "text-gray-400"
             )}
           />
         </motion.span>

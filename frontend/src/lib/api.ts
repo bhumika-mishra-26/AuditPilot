@@ -4,7 +4,7 @@ const API_BASE = (import.meta as any).env?.VITE_API_URL || "http://localhost:800
 
 export async function checkBackendHealth(): Promise<boolean> {
   try {
-    const res = await fetch(`${API_BASE}/api/v1/health`, { signal: AbortSignal.timeout(3000) });
+    const res = await fetch(`${API_BASE}/api/v1/health`, { signal: AbortSignal.timeout(10000) });
     return res.ok;
   } catch {
     return false;
